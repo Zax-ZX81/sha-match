@@ -266,6 +266,10 @@ do
 							strcpy (output_line, searchlist_db [search_index].filepath);	// multi search list output
 							}
 						}	// END multi switch
+						else
+						{
+						smflags->shamatch_found = FALSE;
+						}
 					}	// END multi test
 					else
 					{
