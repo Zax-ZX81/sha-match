@@ -98,6 +98,19 @@ Print version information.
 .B \fB-x\fR
 \fBExclude\fR entries in 'sf_filter' from file search.
 .PP
+.SS scheck
+\fIscheck\fR searches for a single file in a database.  If no database is specified,
+the last verified database is used.
+.PP
+.TP
+.B \fB-d database-file\fR
+Specify the database to search.  Databases should given with a full pathname to avoid
+ 'not found' errors when the CWD changes.
+.PP
+.TP
+.B \fB-V\fR
+Print version information.
+.PP
 .SS sconvert
 .PP
 This converts a plain \fISHA256\fR file to a \fIs2db\fR file.
@@ -113,6 +126,10 @@ Is deleted after use, but may linger in case of crash.
 File listing the names of files/directories in the current directory to
 be included/excluded from the file search.
 Can be generated with 'ls > sf_filter' and then edited as needed.
+.TP
+.B .scheck_db
+File that stores the name of the last database file that \fIscheck\fR used sucessfully.
+This database will be used until another is specified.
 .TP
 .B dataset.sha256
 Two column (seperated by two spaces) output from \fIsha256sum\fR.
