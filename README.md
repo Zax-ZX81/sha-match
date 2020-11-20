@@ -32,6 +32,8 @@ Purpose
 You find a set of files that are either grouped together as an archive/back-up, or that are just the bunch of crap you're trying to weed and make sense of.  You go into the base directory of that dataset and run sfind <dataset name>.  You then keep that file (say junk.s2db) so that at any point in the future you can compare files to its contents.  You then, in the case of a digital junk pile, weed until you've eliminated every file you don't need and stored - systematically - every file you want to keep.  The junk.s2db now essentially contains all the decisions you made during the weeding process.  If you come accross another vile nest of garbage, you can run sfind on that and then compare garbage.s2db to junk.s2db and smatch will spit out a list of all the files that you can delete without a moment's hesitation, confident in the knowledge that you been through all that already, whether you deleted the files in junk or not.  The downfall of redundant file finders is that they don't record the decisions you made about the files you deleted.  Sha-match provides a way around that.  To delete files you just type smatch garbage.s2db junk.s2db | tr '\012' '\000' | xargs -0 rm -v and the output from smatch will be fed into the delete command.  You can optionally send the smatch output through sort to a file (match garbage.s2db junk.s2db | sort > maybe-delete-these.txt), edit the file to remove files you have second thoughts about, and then pipe that file to delete (cat maybe-delete-these.txt | tr '\012' '\000' | xargs -0 rm -v).
   
 In depth
+Before treating any searchlist or database file as legitimate, all the programs do a simple check of the first line of the file.  It runs through the first 64 characters, checking that they're hexidecimals and then decides on the filetype based on character 65.  If it's a space, then sha256; if it's a tab, then s2db.  Not foolproof, but effective.
+
 smatch
 smatch compares two dataset files - a searchlist and a database, printing the filepaths of matching files from the searchlist to stdout.  If you run it in the directory you ran the sfind corresponding to the searchlist in, all the files on stdout with have the right pathnames to send via a pipe to something else, like rm (1).  If you want to see the filenames of the matches in the database file, use -d.  By default smatch shows only one match for each file in the searchlist; use -m to change this.  -d and -m can be used together.  To generate a list of all the files in the database that aren't in the searchlist use -i.  This inverse output prints the two (in the case of \*.sha256) or three (in the case of \*.s2db) columns from the database which can be piped to a file to create a new s2db file.  You can join s2db files together to create a master database file so that one search can be done instead of many.  This can be done using cat 2020_Nov_\*.s2db > 2020_Nov_EVERYTHING.s2db.
 The dataset column in s2db files has two purposes: one, to keep track of where a file came from; two, to guard against unintentional deletion.  If you have a series of databases of all your digital photos that you've joined together (AllMyPhotos.s2db) and you compare a subset of that (PhonePhotos.s2db), you will have a one hundred percent hit rate.  If you find yourself in the PhonePhotos directory and accidently pipe those results to delete them, then you'll lose everything.  smatch checks each match it finds to make sure that the datasets for the pairs of files don't match.  In the above example smatch will print files that match from different datasets in the database but at the end will give the message "Some results excluded because of dataset conflict".
@@ -39,14 +41,13 @@ smatch loads the searchlist into a struct array, sorted by SHA256.  It builds an
 
 sfind
 sfind produces the datasets used by smatch and scheck.  Its output is roughly the same as typing find -type f | xargs sha256sum > dataset.sha256 on the Linux command line.
-sfind generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using -i or -x, the first stage of building the file list will check for all the items in ./sf_filter and include or excluding them accordingly.  The filter doesn't work for items in subdirectories.
-
+sfind generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using -i or -x, the first stage of building the file list will check for all the items in ./sf_filter and include or exclude them accordingly.  The filter doesn't work for items in subdirectories.
 
 scheck
-scheck searches for a single file in a database.
+scheck does the same as smatch only with a single file.  It records the last database it used successfully and will use that if none is specified.  It will print multiple results if it finds them, showing the dataset for each.
 
 sconvert
-sconvert converts a plain SHA256 file to a s2db file.
+sconvert converts a plain SHA256 file to a s2db file.  It uses the filename to fill the dataset field.
 
 Files
 .sfind_temp is a temporary file for storing file search.  Is deleted after use, but may linger in case of crash.
@@ -59,7 +60,7 @@ Restrictions
 The search in smatch requires that the searchlist is sorted by SHA256.  If it isn’t already, smatch will sort it.  The sort is slow.  As you’re likely to generate a dataset once but use it with smatch multiple times, sfind sorts its output by SHA256 checksums default.  That sort is also slow.  The search itself, however, is fast.
 
 Portability
-Wherever possible I used only standard C functions for all the programs.  The exception is sha256sum.  Both sfind and scheck use sha256sum via popen() to calculate SHA256 checksums.
+I used only standard C functions for all the programs.  Both sfind and scheck use sha256sum via popen() to calculate SHA256 checksums.
 All the programs build in GNU/Linux and Windows (with MinGW), and would probably on Mac too, but that's untested.  Windows requires sha256sum in the command path to run sfind and scheck.  The Windows native utilities certutil and get-filehash both produce SHA256 checksums, but certutil refuses to do checksums on empty files and I couldn't coax get-filehash to run via popen().
 sfind uses dirent.h to mimic the GNU/Linux find command, building a list of files/directories in the current directory to generates checksums on.
 
