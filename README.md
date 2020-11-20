@@ -12,7 +12,7 @@ __scheck__ [V] _search-file_ [-d _database-file_]
 __sconvert__ _sha256file_
 
 ### Description
-__sha-match__ uses _SHA256_ checksums to identify files, cataloguing collections of files (___datasets___) for later searches.  ___Dataset___ files can be compared to show files in common, or files unique to one set.  __shamatch__ only compares text files - it doesn't need access to the files the ___datasets___ relate to.
+__sha-match__ uses _SHA256_ checksums to identify files, cataloguing collections of files (___datasets___) for later searches.  ___Dataset___ files can be compared to show files in common, or files unique to one set.  __smatch__ only compares text files - it doesn't need access to the files the ___datasets___ relate to.
 
 __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, printing the filepaths of matching files from the _searchlist_ to the screen.
 
@@ -26,7 +26,7 @@ __sconvert__ converts a plain _sha256_ file to a _s2db_ file.
 I do most of my file management in the shell in _GNU/Linux_.  I don't mind tedious jobs like consolidating multiple backups - I've done such weeding jobs for myself, for my employer and as odd jobs for others.  In _Linux_ that's meant using _GDMap_, _FSLint_ and _Duff_; in _Windows_, _WinDirStat_ and _SearchMyFiles_.
 One abiding aggravation of such work is dealing with the same sets of files over and over.
 
-My natural tendency, and clearly that of others, is to just make a copy of all the files I want to keep, put it on a CD, DVD or external drive and then forget about it.  This strategy is fine, but you can end up with three or four (or seven) copies of the same directory tree in one place.  Then days after you've dealt with a redundancy nest like that you find the same thing on another external dive and have to make the same decisions about the same files all over again.
+My natural tendency, and clearly that of others, is to just make a copy of all the files I want to keep, put it on a CD, DVD or external drive and then forget about it.  This strategy is fine, but you can end up with three or four (or seven) copies of the same directory tree in one place.  Then days after you've dealt with a redundancy nest like that you find the same thing on another external drive and have to make the same decisions about the same files all over again.
 
 The files you keep for your archive are fine - you can use duplicate file finding software to get rid of the stuff from a nest that you already know you have - it's the junk, the files that might be valuable but have to be examined to make sure, that are the biggest pain.  Every time you find some junk files and delete them you now no longer have any record of the files you've eliminated from consideration.  So when you find the that same nest for the third or fourth (or seventh) time you have to decide yet again whether those files are worth keeping.  __Must be a better way!__
 
@@ -34,19 +34,19 @@ I can't remember exactly but I, at some point, generated a 200,000 file catalogu
 
 So I wrote some (simple, because that's all I can manage) _bash_ scripts that would generate and then compare lists with each other to show matching/redundant files.  That was the beginning of lock-down.  I wasn't in any hurry.  So, it takes ten minutes to search for 10,000 files in the 200,000 file catalogue?  Who cares?  Once things were a bit more back to normal the speed started to annoy me while I was continuing with my one-archive-to-hold-them-all project for my own files.
 
-I could see the basic shape of how to approach a dedicated program version of the _bash_ scripts, so I started with _FreeBASIC_ to see if I was kidding myself.  And to see how much faster it would be.  A few days of brutal concentration and the answers were: not really, and ten times.  Vindicated and possibly deluded by my sucess I went back to my old favourite enemy, _C_.  Having worked out most of the problems with _BASIC_, the _C_ development was pretty smooth.  Also, _malloc_ is much more satisfying to use than just dimming a huge array and hoping for the best.  One week and --- ___four seconds___ --- for __smatch__ (_C_ version) to do what __sha-match__ (_bash_ version) did in ten minutes.  Without hardly crashing at all.
+I could see the basic shape of how to approach a dedicated program version of the _bash_ scripts, so I started with _FreeBASIC_ to see if I was kidding myself.  And to see how much faster it would be.  A few days of brutal concentration and the answers were: not really, and ten times.  Vindicated and possibly deluded by my success I went back to my old favourite enemy, _C_.  Having worked out most of the problems with _BASIC_, the _C_ development was pretty smooth.  Also, _malloc_ is much more satisfying to use than just dimming a huge array and hoping for the best.  One week and --- ___four seconds___ --- for __smatch__ (_C_ version) to do what __sha-match__ (_bash_ version) did in ten minutes.  Without hardly crashing at all.
 
 From there it was all feature-creep, writing support programs and swearing at bugs.  Also learning to use `make`, _GitHub_ and writing `man` pages and read-mes.
 
 ### Purpose
-You find a set of files that are either grouped together as an archive/back-up, or that are just the bunch of crap you're trying to weed and make sense of.  You go into the base directory of that ___dataset___ and run __sfind__ _dataset name_.  You then keep that file (say _junk.s2db_) so that at any point in the future you can compare files to its contents.  You then, in the case of a digital junk pile, weed until you've eliminated every file you don't need, and stored - systematically, of course - every file you want to keep.  The _junk.s2db_ now essentially contains all the decisions you made during the weeding process.
+You find a set of files that are either grouped together as an archive/back-up, or that are just the bunch of crap you're trying to weed and make sense of.  You go into the base directory of that ___dataset___ and run __sfind__ _dataset-name_.  You then keep that file (say _junk.s2db_) so that at any point in the future you can compare files to its contents.  You then, in the case of a digital junk pile, weed until you've eliminated every file you don't need, and stored - systematically, of course - every file you want to keep.  The _junk.s2db_ now essentially contains all the decisions you made during the weeding process.
 
 If you come accross another vile nest of garbage, you can run __sfind__ on that and then compare _garbage.s2db_ to _junk.s2db_ and __smatch__ will spit out a list of all the files that you can delete without a moment's hesitation, confident in the knowledge that you been through all that already, whether you deleted the files in junk or not.  The downfall of redundant file finders is that they don't record the decisions you made about the files you deleted.  __Sha-match__ provides a way around that.
 
 To delete files you just type `smatch garbage.s2db junk.s2db | tr '\012' '\000' | xargs -0 rm -v` and the output from __smatch__ will be fed into the delete command.  You can optionally send the __smatch__ output through `sort` to a file (`smatch garbage.s2db junk.s2db | sort > maybe-delete-these.txt`), edit to remove files you have second thoughts about, and then pipe that file to delete (`cat maybe-delete-these.txt | tr '\012' '\000' | xargs -0 rm -v`).
   
 ### In depth
-Before treating any _searchlist_ or _database_ file as legitimate, all the programs do a simple check of the first line of the file.  They run through the first 64 characters, checking that they're hexidecimals and then decide on the filetype based on character 65.  If it's a `space`, then _sha256_; if it's a `tab`, then _s2db_.  Not foolproof, but effective.  See the `man` page for more details on switches, particularly for __sfind__.
+Before treating any _searchlist_ or _database_ file as legitimate, all the programs do a simple check of the first line of the file.  They run through the first 64 characters, checking that they're hexadecimals and then decide on the filetype based on character 65.  If it's a `space`, then _sha256_; if it's a `tab`, then _s2db_.  Not foolproof, but effective.  See the `man` page for more details on switches, particularly for __sfind__.
 
 #### smatch
 __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, printing the filepaths of matching files from the _searchlist_ to _stdout_.  If you run it in the directory you ran the __sfind__ corresponding to the _searchlist_ in, all the files on _stdout_ with have the right pathnames to send via a pipe to something else, like `rm (1)`.  If you want to see the filenames of the matches in the _database file_, use __-d__.  By default __smatch__ shows only one match for each file in the _searchlist_; use __-m__ to change this.  __-d__ and __-m__ can be used together.  To generate a list of all the files in the _database_ that aren't in the _searchlist_ use __-i__.  This inverse output prints the two (in the case of _sha256_) or three (in the case of _s2db_) columns from the _database_ which can be piped to a file to create a new _s2db_ file.  You can join _s2db_ files together to create a master _database_ file so that one search can be done instead of many.  This can be done using `cat 2020_Nov_*.s2db > 2020_Nov_EVERYTHING.s2db`.
@@ -73,9 +73,9 @@ __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filen
 
 `.scheck_db` stores the name of the last _database_ file that __scheck__ used sucessfully.  This _database_ will be used until another is specified.
 
-_dataset.sha256_ - the two column (seperated by two spaces) output from _sha256sum_. 
+_dataset.sha256_ - the two column (separated by two spaces) output from _sha256sum_. 
 
-_dataset.s2db_ - three column output, `tab` seperated.  1: SHA256, 2: filepath, 3: dataset.
+_dataset.s2db_ - three column output, `tab` separated.  1: SHA256, 2: filepath, 3: dataset.
 
 ### Restrictions
 The search in __smatch__ requires that the _searchlist_ is sorted by _SHA256_.  If it isn’t already, __smatch__ will sort it.  The sort is slow.  As you’re likely to generate a ___dataset___ once but use it with __smatch__ multiple times, __sfind__ sorts its output by _SHA256_ checksums by default.  That sort is also slow.  The search itself, however, is fast.
