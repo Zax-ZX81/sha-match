@@ -61,7 +61,7 @@ __sfind__ produces the ___datasets___ used by __smatch__ and __scheck__.  Its ou
 __sfind__ generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using __-i__ or __-x__, the first stage of building the file list will check for all the items in `./sf_filter` and include or exclude them accordingly.  The filter doesn't work for items in subdirectories.
 
 #### scheck
-__scheck__ does the same as __smatch__ only with a single file.  It records the last _database_ it used successfully and will use that if none is specified.  It will print multiple results if it finds them, showing the ___dataset___ for each.
+__scheck__ does the same as __smatch__ only with a single file.  It records the last _database_ it used successfully and will keep using that until another _database_ that passes the verification check is specified.  It will print multiple results if it finds them, showing the ___dataset___ for each.
 
 #### sconvert
 __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filename to fill the ___dataset___ field.
