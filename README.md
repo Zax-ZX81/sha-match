@@ -12,7 +12,7 @@ __scheck__ [V] _search-file_ [-d _database-file_]
 __sconvert__ _SHA256file_
 
 ### Description
-__sha-match__ uses _SHA256_ checksums to identify files, cataloguing collections of files (___datasets___) for later searches.  ___Dataset___ files can be compared to show files in common, or files unique to one set.
+__sha-match__ uses _SHA256_ checksums to identify files, cataloguing collections of files (___datasets___) for later searches.  ___Dataset___ files can be compared to show files in common, or files unique to one set.  __shamatch__ only compares text files - it doesn't need access to the files the ___datasets___ relate to.
 
 __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, printing the filepaths of matching files from the _searchlist_ to the screen.
 
