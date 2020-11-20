@@ -72,6 +72,7 @@ __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filen
 `sf_filter` is a file listing the names of files/directories in the current directory to be included/excluded from the file search.  Can be generated with `ls  > sf_filter` and then edited as needed.
 
 `.scheck_db` stores the name of the last _database_ file that __scheck__ used sucessfully.  This _database_ will be used until another is specified.
+
 _dataset.sha256_ - the two column (seperated by two spaces) output from _sha256sum_.
 
 _dataset.s2db_ - three column output, `tab` seperated.  1: SHA256, 2: filepath, 3: dataset.
