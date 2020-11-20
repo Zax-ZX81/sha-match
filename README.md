@@ -84,7 +84,7 @@ The search in __smatch__ requires that the _searchlist_ is sorted by _SHA256_.  
 I used only standard _C_ functions for all the programs.  Both __sfind__ and __scheck__ use `sha256sum` via _popen()_ to calculate _SHA256_ checksums.
 All the programs build in _GNU/Linux_ and _Windows_ (with _MinGW_), and would probably on _Mac_ too, but that's untested.  _Windows_ requires `sha256sum` in the command path to run __sfind__ and __scheck__.  The _Windows_ native utilities `certutil` and `get-filehash` both produce _SHA256_ checksums, but `certutil` refuses to do checksums on empty files and I couldn't coax `get-filehash` to run via _popen()_.  The output in _Linux_ is coloured; in _Windows_ it's black and white.
 
-__sfind__ uses _dirent.h_ to mimic the _GNU/Linux_ `find` command, building a list of files/directories in the current directory to generates checksums on.
+__sfind__ uses _dirent.h_ to mimic the _GNU/Linux_ `find` command, building a list of files/directories in the current directory to generate checksums for.
 
 ### Bugs
 I'm not a natural coder.  My debugging strategy mainly consists of putting in heaps of _printf_ statements everywhere to try to figure out what the hell is going wrong.  Crashes in these programs now seem to be related to trying to close a file that isn't open or due to my misunderstanding the correct use of _malloc_.  __sfind__ sends filenames to `sha256sum` enclosed in double quotes to account for spaces and other non-standard characters, but that sometimes fails - with \` (backtick) for example.
