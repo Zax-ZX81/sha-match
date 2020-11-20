@@ -73,7 +73,7 @@ __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filen
 
 `.scheck_db` stores the name of the last _database_ file that __scheck__ used sucessfully.  This _database_ will be used until another is specified.
 
-_dataset.sha256_ - the two column (seperated by two spaces) output from _sha256sum_.
+_dataset.sha256_ - the two column (seperated by two spaces) output from _sha256sum_. 
 
 _dataset.s2db_ - three column output, `tab` seperated.  1: SHA256, 2: filepath, 3: dataset.
 
