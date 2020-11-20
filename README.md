@@ -78,7 +78,7 @@ _dataset.sha256_ - the two column (seperated by two spaces) output from _sha256s
 _dataset.s2db_ - three column output, `tab` seperated.  1: SHA256, 2: filepath, 3: dataset.
 
 ### Restrictions
-The search in __smatch__ requires that the searchlist is sorted by _SHA256_.  If it isn’t already, __smatch__ will sort it.  The sort is slow.  As you’re likely to generate a ___dataset___ once but use it with __smatch__ multiple times, __sfind__ sorts its output by _SHA256_ checksums by default.  That sort is also slow.  The search itself, however, is fast.
+The search in __smatch__ requires that the _searchlist_ is sorted by _SHA256_.  If it isn’t already, __smatch__ will sort it.  The sort is slow.  As you’re likely to generate a ___dataset___ once but use it with __smatch__ multiple times, __sfind__ sorts its output by _SHA256_ checksums by default.  That sort is also slow.  The search itself, however, is fast.
 
 ### Portability
 I used only standard _C_ functions for all the programs.  Both __sfind__ and __scheck__ use `sha256sum` via _popen()_ to calculate _SHA256_ checksums.
