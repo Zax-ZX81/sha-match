@@ -18,7 +18,7 @@ __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, p
 
 __sfind__ generates a ___dataset___ for the current directory.
 
-__scheck__ searches for a single file in a database.
+__scheck__ searches for a single file in a _database_.
 
 __sconvert__ converts a plain _sha256_ file to a _s2db_ file.
 
