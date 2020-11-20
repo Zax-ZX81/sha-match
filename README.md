@@ -67,7 +67,7 @@ __scheck__ does the same as __smatch__ only with a single file.  It records the 
 __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filename to fill the ___dataset___ field.
 
 ### Files
-`.sfind_temp` is a temporary file for storing the file search in __sfind__.  Is deleted after use, but may linger in case of crash.
+`.sfind_temp` is a temporary file for storing the file search in __sfind__.  It is deleted after use, but may linger in case of crash.
 
 `sf_filter` is a file listing the names of files/directories in the current directory to be included/excluded from the file search.  Can be generated with `ls  > sf_filter` and then edited as needed.
 
