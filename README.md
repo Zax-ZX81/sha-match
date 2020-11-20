@@ -7,7 +7,7 @@ __smatch__ [dimV] _searchlist database_
 
 __sfind__ [fiopsuvVx] _dataset_
 
-__scheck__ [V] _search-file_ [-d database-file]
+__scheck__ [V] _search-file_ [-d _database-file_]
 
 __sconvert__ _SHA256file_
 
