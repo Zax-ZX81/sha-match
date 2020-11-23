@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include "SMLib.h"
@@ -34,12 +35,17 @@
 #define NUM_OF_TEMP_FILES 2
 #define F_INCL 1
 #define F_EXCL 2
-#define FILTER_INITIAL_SIZE 64
-#define FILTER_INCREMENT 64
+#define FILTER_INITIAL_SIZE 5
+#define FILTER_INCREMENT 5
 #define FILTER_CEILING 1024
 #define FILELIST_INITIAL_SIZE 1024
 #define FILELIST_INCREMENT 1024
 #define FILELIST_CEILING 262144
+#define T_DIR 'd'
+#define T_FIL 'f'
+#define T_OTH 'o'
+#define T_REJ 'r'
+#define T_HDR 'h'
 
 #if __linux__
 #define DIR_TYPE 4
@@ -54,14 +60,18 @@
 struct file_list_entry
 	{
 	char object_type;
+	char filtered;
 	char filepath [FILEPATH_LENGTH];
 	};
+char filter_line_check (char *filter_line);
 
 int main (int argc, char *argv [])
 
 {
 
 struct dirent *dir_ents;
+struct stat file_stat;
+struct shafind_flags sfflags [1] = {0};
 struct file_list_entry *filter_list;
 
 FILE *FILTER_FP;					// inclusion and exclusion filter list
@@ -91,9 +101,10 @@ char find_sub_target [FILEPATH_LENGTH];				// next subdirectory to search
 char C_W_D [256];									// base directory of search
 char swap_made = TRUE;								// swap was made on last sort pass
 char filter_match = FALSE;
+char filter_check;
 
 // Argument section
-for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
+/*for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 	{
 	if (argv [arg_no] [0] == '-')
 		{
@@ -126,34 +137,22 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				}	// END switch
 			}	// END for switch_pos
 		}	// END for arg_no
-		else
-		{
-		strncpy (database_dataset, argv [arg_no], DATASET_LENGTH);
-		} 	// END else if int argv
 	}
-
+*/
 // Output open section
-if (sfflags->filtering > 0)
-	{
+//if (sfflags->filtering > 0)
+//	{
 	FILTER_FP = fopen (FILTER_FILE, "r");
 	if (FILTER_FP == NULL)
 		{
 		exit_error ("Can't find filter file: ", FILTER_FILE);
 		}
-	}
-/*
-        do      // count lines in filter for memory allocation
-                {
-                filter_ferr = (long)fgets (fileline, FILEPATH_LENGTH, FILTER_FP);
-                if (fileline != NULL && filter_ferr)
-                        {
-                        filter_line_count ++;
-                        }
-                } while (!feof (FILTER_FP));
-*/
-if (sfflags->filtering > 0)
-	{
+//	}
+
+//if (sfflags->filtering > 0)
+//	{
 	filter_list = (struct file_list_entry *) malloc (sizeof (struct file_list_entry) * FILTER_INITIAL_SIZE);
+	filter_curr_size = FILTER_INITIAL_SIZE;
 	do
 		{
 		filter_ferr = (long)fgets (fileline, FILEPATH_LENGTH, FILTER_FP);
@@ -161,20 +160,55 @@ if (sfflags->filtering > 0)
 			{
 			strcpy (filter_list [filter_index].filepath, fileline);
 			filter_list [filter_index].filepath[strlen (filter_list [filter_index].filepath) - 1] = NULL_TERM;
+			filter_check = filter_line_check (filter_list [filter_index].filepath);
+			if (filter_check)
+				{
+				if (stat (filter_list [filter_index].filepath, &file_stat) == 0)
+					{
+					if (file_stat.st_mode & S_IFREG)
+						{
+						filter_list [filter_index].object_type = T_FIL;
+						}
+					if (file_stat.st_mode & S_IFDIR)
+						{
+						filter_list [filter_index].object_type = T_DIR;
+						}
+					}
+					else
+					{
+					filter_list [filter_index].object_type = T_REJ;
+					}
+				if (filter_check == 2)
+					{
+					filter_list [filter_index].object_type = T_HDR;
+					}
+				}
+				else
+				{
+				filter_list [filter_index].object_type = T_REJ;
+				}
+//			if (filter_list [filter_index].object_type != T_REJ)
+//				{
+//				printf ("%s__%c\n", filter_list [filter_index].filepath, filter_list [filter_index].object_type);
+//				}
 			}
 		if (filter_index + 1 == filter_curr_size)
 			{
-			filter_curr_size =+ FILTER_INCREMENT;
-			filter_list = (struct file_list_entry *) realloc (sizeof (struct file_list_entry) * filter_curr_size);
+			filter_curr_size += FILTER_INCREMENT;
+			filter_list = (struct file_list_entry *) realloc (filter_list, sizeof (struct file_list_entry) * filter_curr_size);
 			}
-		}
+//		printf ("FI=%d\tFCS=%d\n", filter_index, filter_curr_size);
+		filter_index ++;
+		} while (!feof (FILTER_FP));
+//	}
+filter_line_count = filter_index;
+for (filter_index = 0; filter_index < filter_line_count; filter_index ++)
+	{
+	printf ("%s__%c\n", filter_list [filter_index].filepath, filter_list [filter_index].object_type);
 	}
-
-
+/*
 // Initial search section
 printf ("# Building file list...");
-strcpy (database_filename, database_dataset);		// compose output filename
-strcat (database_filename, database_extension);
 getcwd (C_W_D, 256);		// get present working directory
 strcat (C_W_D, SLASH_TERM);
 DIR_PATH = opendir (PATH_CURRENT);		// open directory
@@ -238,12 +272,6 @@ if (DIR_PATH != NULL)
 	}
 
 // Feedback search section
-fflush (FIND_OUT_FP);		// ensure temp file is up to date when read occurs
-FIND_IN_FP = fopen (TEMP_FILE, "r");
-if (FIND_IN_FP == NULL)
-	{
-	exit_error ("Can't open temp file for reading", "");
-	}
 while (!feof (FIND_IN_FP))
 	{
 	chdir (C_W_D);		// go back to the starting directory
@@ -288,7 +316,6 @@ while (!feof (FIND_IN_FP))
 					}
 				}
 			closedir (DIR_PATH);
-			fflush (FIND_OUT_FP);		// ensure temp file is up to date when read occurs
 			}
 //			else
 //			{
@@ -297,7 +324,37 @@ while (!feof (FIND_IN_FP))
 		}
 	}
 printf (" %d files found\n", file_type_count);
-fclose (FIND_OUT_FP);		// finished collecting temp file entries
-fclose (FIND_IN_FP);		// return to start of temp file for reprocessing
 chdir (C_W_D);				// go back to the starting directory
+
+*/
+free (filter_list);
+}
+
+char filter_line_check (char *filter_line)
+{
+int char_index;
+char first_char;
+
+first_char = filter_line [0];
+if (first_char == 47)
+	{
+	return (0);
+	}
+if (first_char == 35)
+	{
+	return (2);
+	}
+if (first_char < 45 || first_char > 122)
+	{
+	return (0);
+	}
+if (first_char < 65 && first_char > 57)
+	{
+	return (0);
+	}
+if (first_char < 97 && first_char > 90)
+	{
+	return (0);
+	}
+return (1);
 }
