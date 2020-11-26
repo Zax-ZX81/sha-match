@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Find 0.44             *
+ *     SHA-Find 0.46             *
  *                               *
- *     2020-11-15                *
+ *     2020-11-25                *
  *                               *
  *     Zax                       *
  *                               *
@@ -12,15 +12,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.44"
+#define PROG_VERSION "0.46"
+#define FILTER_PROG_NAME "NFind"
 #define SHA_CMD "sha256sum "
 #define TWO_SPACES "  "
-#define TEMP_FILE ".sfind_temp1"
 #define FILTER_FILE "sf_filter"
+#define FILTER_OUT "sf_filter-o"
 #define FILE_ENTRY 'f'
 #define DIR_ENTRY 'd'
 #define UNKNOWN_ENTRY 'x'
@@ -35,6 +37,18 @@
 #define NUM_OF_TEMP_FILES 2
 #define F_INCL 1
 #define F_EXCL 2
+#define F_INCL 1
+#define F_EXCL 2
+#define FILTER_INITIAL_SIZE 64
+#define FILTER_INCREMENT 64
+#define FILTER_CEILING 1024
+#define FIND_LIST_INITIAL_SIZE 1024
+#define FIND_LIST_INCREMENT 1024
+#define FIND_LIST_CEILING 262144
+#define T_DIR 'd'
+#define T_FIL 'f'
+#define T_REJ 'r'
+#define T_HDR 'h'
 
 #if __linux__
 #define DIR_TYPE 4
@@ -46,56 +60,76 @@
 #define FILE_TYPE 0
 #endif
 
-struct file_list_entry
+struct find_list_entry
 	{
+	char object_type;
+	char filtered;
+	char filepath [FILEPATH_LENGTH];
+	int filesize;
+	};
+struct filter_entry
+	{
+	char object_type;
 	char filepath [FILEPATH_LENGTH];
 	};
+
+char filter_line_check (char *filter_line);
 
 int main (int argc, char *argv [])
 
 {
 
-struct sha_database *database_db, swap_db;
-struct shafind_flags sfflags [1] = {0};
+struct sfind_database *database_db, swap_db;
+struct sfind_flags sfflags [1] = {0};
 struct dirent *dir_ents;
-struct file_list_entry *filter_list;
+struct stat file_stat;
+struct find_list_entry *find_list;
+struct filter_entry *filter_list;
 sfflags->database_type = S2DB_TYPE;		// default file type S2DB
 sfflags->sort = SORT_SHA;				// sort by SHA256SUM by default
+sfflags->filtering = FALSE;
 
 FILE *SHA_PIPE;
 FILE *FILTER_FP;					// inclusion and exclusion filter list
-FILE *FIND_OUT_FP, *FIND_IN_FP;		// find temp file format: first char of line is type, rest is filepath
+FILE *FILOUT_FP;
 FILE *DATABASE_FP;
 DIR *DIR_PATH;
 
 int line_index;
 int filter_line_count = 0;
-int filter_index;
+int filter_index = 0;
+int find_list_write = 0;		// number of file items found in search
+int find_list_read = 0;
 int database_index = 0;
 int file_type_count = 0;
-int object_count = 0;		// number of file items found in search
-int find_in_ferr;
 int filter_ferr;
 int arg_no, switch_pos;
 int outer_loop, inner_loop;
 int progress_count = 0;
 int progress_interval;
 int progress_percent = 0;
+int filter_curr_size = 0;
+int find_list_curr_size = 0;
+
+long file_size_total = 0;
+long file_size_accum = 0;
+
+double file_size_mult = 0;
+double file_progress = 0;
 
 char database_dataset [DATASET_LENGTH] = "";		// holds dataset name
 char database_filename [FILEPATH_LENGTH] = "";		// output file name with extension
-char find_line [FILELINE_LENGTH] = "";				// holds line from temp file
 char fileline [FILELINE_LENGTH] = "";				// holds line from filter file
 char sha_line [FILELINE_LENGTH] = "";				// hold line from SHA256SUM output
 char switch_chr;
 char database_extension [8] = "";					// holds database extension based on flag
 char sha_command [FILEPATH_LENGTH] = "";			// SHA256SUM command line with file argument
-char object_type;									// holds directory entry type: file, dir, other
 char path_sub [FILEPATH_LENGTH];					// holds SHA256SUM file argument
-char find_sub_target [FILEPATH_LENGTH];				// next subdirectory to search
 char C_W_D [256];									// base directory of search
 char swap_made = TRUE;								// swap was made on last sort pass
 char filter_match = FALSE;
+char filter_check;
+char output_current;
 
 // Argument section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -151,7 +185,7 @@ if (argc < 2 || !strlen (database_dataset))		// no file argument, so stdout only
 	}
 if (sfflags->verbose)
 	{
-	sfflags->progress = SW_OFF;	// progress indicator will interfer with verbose output
+	sfflags->progress = SW_OFF;	// progress indicator will interfere with verbose output
 	}
 
 // Output open section
@@ -173,35 +207,74 @@ if (sfflags->filtering > 0)
 	}
 if (sfflags->filtering > 0)
 	{
-	do	// count lines in filter for memory allocation
+	filter_list = (struct filter_entry *) malloc (sizeof (struct filter_entry) * FILTER_INITIAL_SIZE);
+	filter_curr_size = FILTER_INITIAL_SIZE;
+	if (sfflags->std_out == SW_OFF)
+		{
+		printf ("# Loading filter...");
+		}
+	do
 		{
 		filter_ferr = (long)fgets (fileline, FILEPATH_LENGTH, FILTER_FP);
 		if (fileline != NULL && filter_ferr)
 			{
-			filter_line_count ++;
+			strcpy (filter_list [filter_index].filepath, fileline);
+			filter_list [filter_index].filepath[strlen (filter_list [filter_index].filepath) - 1] = NULL_TERM;
+			if (filter_list [filter_index].filepath[strlen (filter_list [filter_index].filepath) - 1] == '/')
+				{
+				filter_list [filter_index].filepath[strlen (filter_list [filter_index].filepath) - 1] = NULL_TERM;
+				}
+			filter_check = filter_line_check (filter_list [filter_index].filepath);
+			if (filter_check)
+				{
+				if (stat (filter_list [filter_index].filepath, &file_stat) == 0)
+					{
+					if (file_stat.st_mode & S_IFREG)
+						{
+						filter_list [filter_index].object_type = T_FIL;
+						}
+					if (file_stat.st_mode & S_IFDIR)
+						{
+						filter_list [filter_index].object_type = T_DIR;
+						}
+					}
+					else
+					{
+					filter_list [filter_index].object_type = T_REJ;
+					}
+				if (filter_check == 2)
+					{
+					filter_list [filter_index].object_type = T_HDR;
+					}
+				}
+				else
+				{
+				filter_list [filter_index].object_type = T_REJ;
+				}
 			}
+		if (filter_index + 1 == filter_curr_size)
+			{
+			filter_curr_size += FILTER_INCREMENT;
+			filter_list = (struct filter_entry *) realloc (filter_list, sizeof (struct filter_entry) * filter_curr_size);
+			}
+		filter_index ++;
 		} while (!feof (FILTER_FP));
-	rewind (FILTER_FP);
-	printf ("# %sApplying filter with %d lines...%s\n", TEXT_YELLOW, filter_line_count,TEXT_RESET);
-	filter_list = (struct file_list_entry *) malloc (sizeof (struct file_list_entry) * filter_line_count);
-	for (filter_index = 0; filter_index < filter_line_count; filter_index ++)	// data entry for searchlist
+	filter_line_count = filter_index - 1;
+	if (sfflags->std_out == SW_OFF)
 		{
-		fgets (fileline, FILEPATH_LENGTH, FILTER_FP);
-		strcpy (filter_list [filter_index].filepath, fileline);
-		filter_list [filter_index].filepath[strlen (filter_list [filter_index].filepath) - 1] = NULL_TERM;
+		printf (" %d lines added.\n", filter_line_count);
 		}
 	}
 
-FIND_OUT_FP = fopen (TEMP_FILE, "w");
-if (FIND_OUT_FP == NULL)
-	{
-	exit_error ("Can't open temp file for writing", "");
-	}
-
 // Initial search section
-printf ("# Building file list...");
+if (sfflags->std_out == SW_OFF)
+	{
+	printf ("# Building file list...");
+	}
 strcpy (database_filename, database_dataset);		// compose output filename
 strcat (database_filename, database_extension);
+find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * FIND_LIST_INITIAL_SIZE);
+find_list_curr_size = FIND_LIST_INITIAL_SIZE;
 getcwd (C_W_D, 256);		// get present working directory
 strcat (C_W_D, SLASH_TERM);
 DIR_PATH = opendir (PATH_CURRENT);		// open directory
@@ -209,53 +282,34 @@ if (DIR_PATH != NULL)
 	{
 	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
 		{
-		sfflags->output_current = TRUE;			// set so that if not filtering all results are output
-		filter_match = FALSE;
-		if (sfflags->filtering > 0)				// are we applying filtering?
+		switch (dir_ents->d_type)
 			{
-			sfflags->output_current = FALSE;
-			for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
-				{
-				if (!strcmp (filter_list [filter_index].filepath, dir_ents->d_name))		// match found
-					{
-					filter_match = TRUE;
-					}
-				}
-			if (sfflags->filtering == F_INCL && filter_match)
-				{
-				sfflags->output_current = TRUE;
-				}
-			if (sfflags->filtering == F_EXCL && !filter_match)
-				{
-				sfflags->output_current = TRUE;
-				}
-			}
-		if (sfflags->output_current)
+			case FILE_TYPE:					// set type to file
+				find_list [find_list_write].object_type = T_FIL;
+				break;
+			case DIR_TYPE:					// set type to directory
+				find_list [find_list_write].object_type = T_DIR;
+				break;
+			default:						// mark as unneeded type
+				find_list [find_list_write].object_type = T_REJ;
+				break;
+			}								// filter out ".", ".." and temp file from search vvv
+		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
+			&& strcmp (dir_ents->d_name, database_filename)))
 			{
-			object_count ++;
-			switch (dir_ents->d_type)
-				{
-				case FILE_TYPE:					// set type to file
-					object_type = FILE_ENTRY;
-					file_type_count ++;			// increment counter for database memory allocation
-					break;
-				case DIR_TYPE:					// set type to directory
-					object_type = DIR_ENTRY;
-					break;
-				default:						// mark as unneeded type
-					object_type = UNKNOWN_ENTRY;
-					break;
-				}								// filter out ".", ".." and temp file from search vvv
-			if (strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
-				&& strcmp (dir_ents->d_name, database_filename) && strcmp (dir_ents->d_name, TEMP_FILE))
-				{
-				fprintf (FIND_OUT_FP, "%c./%s\n", object_type, dir_ents->d_name);		// append entry to temp file
-				if (sfflags->verbose)
-					{
-					printf ("%d  %s/%s\n", object_count, find_sub_target, dir_ents->d_name);
-					}
-				}
+			find_list [find_list_write].object_type = T_REJ;
 			}
+		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
+		if (sfflags->verbose)
+			{
+			printf ("%3d %c %2d -%s-\n", find_list_write, find_list [find_list_write].object_type, dir_ents->d_type, dir_ents->d_name);
+			}
+		if (find_list_write + 1 == find_list_curr_size)
+			{
+			find_list_curr_size += FIND_LIST_INCREMENT;
+			find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
+			}
+		find_list_write ++;
 		}
 	(void) closedir (DIR_PATH);
 	}
@@ -265,105 +319,174 @@ if (DIR_PATH != NULL)
 	}
 
 // Feedback search section
-fflush (FIND_OUT_FP);		// ensure temp file is up to date when read occurs
-FIND_IN_FP = fopen (TEMP_FILE, "r");
-if (FIND_IN_FP == NULL)
-	{
-	exit_error ("Can't open temp file for reading", "");
-	}
-while (!feof (FIND_IN_FP))
+while (find_list_read < find_list_write)
 	{
 	chdir (C_W_D);		// go back to the starting directory
-	find_in_ferr = (long)fgets (find_line, FILEPATH_LENGTH, FIND_IN_FP);		// read temp file line
-	if (find_line != NULL && find_in_ferr)
+	if (find_list [find_list_read].object_type == T_DIR)
 		{
-		object_count ++;
-		object_type = find_line [0];		// find entry type: 'd', 'f' or 'x'
-		if (object_type == DIR_ENTRY)		// if object is directory, prepare to enter it
+		strcpy (path_sub, C_W_D);
+		strcat (path_sub, find_list [find_list_read].filepath);		// compose directory location for search
+		chdir (path_sub);						// move to search directory
+		DIR_PATH = opendir (path_sub);			// open directory
+		if (DIR_PATH != NULL)
 			{
-			strcpy (find_sub_target, find_line + 1);		// copy remainder of line to search target
-			find_sub_target [strlen (find_sub_target) - 1] = NULL_TERM;
-			strcpy (path_sub, C_W_D);
-			strcat (path_sub, find_sub_target);		// compose directory location for search
-			chdir (path_sub);						// move to search directory
-			DIR_PATH = opendir (path_sub);			// open directory
-			if (DIR_PATH != NULL)
+			while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
 				{
-				while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
+				switch (dir_ents->d_type)
 					{
-					switch (dir_ents->d_type)
-						{
-						case FILE_TYPE:					// set type to file
-							object_type = FILE_ENTRY;
-							file_type_count ++;			// increment counter for database memory allocation
-							break;
-						case DIR_TYPE:					// set type to directory
-							object_type = DIR_ENTRY;
-							break;
-						default:						// mark as unneeded type
-							object_type = UNKNOWN_ENTRY;
-							break;
-						}								// filter out "." and ".." from search vvv
-					if (strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV))
-						{
-						fprintf (FIND_OUT_FP, "%c%s/%s\n", object_type, find_sub_target, dir_ents->d_name);
-						if (sfflags->verbose)								// append entry to temp file ^^^
-							{
-							printf ("%d  %s/%s\n", object_count, find_sub_target, dir_ents->d_name);
-							}
-						}
+					case FILE_TYPE:					// set type to file
+						find_list [find_list_write].object_type = FILE_ENTRY;
+						break;
+					case DIR_TYPE:					// set type to directory
+						find_list [find_list_write].object_type = DIR_ENTRY;
+						break;
+					default:						// mark as unneeded type
+						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
+						break;
+					}								// filter out "." and ".." from search vvv
+				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
+					{
+					find_list [find_list_write].object_type = T_REJ;
 					}
+				strcpy (find_list [find_list_write].filepath, find_list [find_list_read].filepath);
+				strcat (find_list [find_list_write].filepath, "/");
+				strcat (find_list [find_list_write].filepath, dir_ents->d_name);
+				if (find_list_write + 1 == find_list_curr_size)
+					{
+					find_list_curr_size += FIND_LIST_INCREMENT;
+					find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
+					}
+				if (sfflags->verbose)								// append entry to temp file ^^^
+					{
+					printf ("%d %c >%s<\n", find_list_write, find_list [find_list_write].object_type, find_list [find_list_write].filepath);
+					}
+				find_list_write ++;
 				}
 			closedir (DIR_PATH);
-			fflush (FIND_OUT_FP);		// ensure temp file is up to date when read occurs
 			}
 //			else
 //			{
 //			perror ("Couldn't open the directory");		// FIX
 //			}
-			
-		
+
+
+		}
+	find_list_read ++;
+	}
+if (sfflags->std_out == SW_OFF)
+	{
+	printf ("%d files found.\n", find_list_write);
+	}
+if (sfflags->filtering > 0 && sfflags->std_out == SW_OFF)
+	{
+	printf ("# Applying filter...");
+	}
+for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
+	{
+	output_current = TRUE;			// set so that if not filtering all results are output
+	filter_match = FALSE;
+	if (sfflags->filtering > 0)				// are we applying filtering?
+		{
+		output_current = FALSE;
+		for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
+			{
+			if (!strcmp (filter_list [filter_index].filepath, find_list [find_list_read].filepath) && \
+				(filter_list [filter_index].object_type == T_FIL || filter_list [filter_index].object_type == T_DIR))		// match found
+				{
+				filter_match = TRUE;
+				}
+			}
+		if (sfflags->filtering == F_INCL && filter_match)
+			{
+			output_current = TRUE;
+			}
+		if (sfflags->filtering == F_EXCL && !filter_match)
+			{
+			output_current = TRUE;
+			}
+		}
+	if (output_current)
+		{
+		if (find_list [find_list_read].object_type == T_FIL)
+			{
+			if (stat (find_list [find_list_read].filepath, &file_stat) == 0)
+				{
+				if (file_stat.st_mode & S_IFREG)
+					{
+					find_list [find_list_read].filesize = file_stat.st_size;
+					}
+				}
+			file_type_count ++;
+			file_size_total += find_list [find_list_read].filesize;
+//printf ("FST=%d\t", file_size_total);
+			}
 		}
 	}
-printf (" %d files found\n", file_type_count);
-fclose (FIND_OUT_FP);		// finished collecting temp file entries
-rewind (FIND_IN_FP);		// return to start of temp file for reprocessing
+if (sfflags->filtering > 0)
+	{
+	FILOUT_FP = fopen (FILTER_OUT, "w");
+	if (FILOUT_FP == NULL)
+		{
+		exit_error ("Can't open filter for writing", "");
+		}
+	for (filter_index = 0; filter_index < filter_line_count; filter_index ++)
+		{
+		if (filter_index == 0)
+			{
+			fprintf (FILOUT_FP, "# Automatically generated by %s\n", FILTER_PROG_NAME);
+			}
+		if (filter_list [filter_index].object_type != T_REJ && filter_index != 0)
+			{
+			fprintf (FILOUT_FP, "%s\n", filter_list [filter_index].filepath);
+			}
+		}
+	fclose (FILOUT_FP);
+	free (filter_list);
+	if (sfflags->std_out == SW_OFF)
+		{
+		printf ("%d files added.\n", file_type_count);
+		}
+	}
+
 chdir (C_W_D);				// go back to the starting directory
 
 // Database filepath load section
-file_type_count = file_type_count - NUM_OF_TEMP_FILES;
-database_db = (struct sha_database *) malloc (sizeof (struct sha_database) * file_type_count);		// allocate memory for database
-while (!feof (FIND_IN_FP))
+database_db = (struct sfind_database *) malloc (sizeof (struct sfind_database) * file_type_count);		// allocate memory for database
+find_list_read = 0;
+for (database_index = 0; database_index < file_type_count; database_index ++)
 	{
-	find_in_ferr = (long)fgets (find_line, FILEPATH_LENGTH, FIND_IN_FP);		// read temp file line
-	if (find_line != NULL && find_in_ferr)
+	while (find_list [find_list_read].object_type != T_FIL && find_list_read < find_list_write)
 		{
-		object_type = find_line [0];		// find entry type: 'd', 'f' or 'x'
-		if (object_type == FILE_ENTRY)		// if object is file, do SHA256SUM
-			{
-			find_line [strlen (find_line) - 1] = NULL_TERM;
-			strcpy (database_db [database_index].filepath, find_line + 1);
-			database_index ++;
-			}
+		find_list_read ++;
 		}
+	if (find_list [find_list_read].object_type == T_FIL)		// if object is file, do SHA256SUM
+		{
+		strcpy (database_db [database_index].filepath, find_list [find_list_read].filepath);
+		strcpy (database_db [database_index].dataset, database_dataset);
+		database_db [database_index].filesize = find_list [find_list_read].filesize;
+//		printf ("%d\n", find_list [find_list_read].filesize);
+		}
+	find_list_read ++;
 	}
 
 // SHA256SUM generation section
 if (sfflags->std_out == SW_OFF)
 	{
-	printf ("# Generating SHA256SUMS for %s%s%s\n", TEXT_BLUE, database_filename, TEXT_RESET);
+	printf ("# Generating SHA256SUMs for %s%s%s...", TEXT_BLUE, database_filename, TEXT_RESET);
 	}
-progress_interval = file_type_count / 101;
-for (line_index = 0; line_index < file_type_count; line_index ++)	// 
+if (sfflags->progress)
+	{
+	printf ("\n");
+	}
+file_size_mult = 100.0 / (float)file_size_total;
+//fprintf (stderr, "%ld\t%f\n", file_size_total, file_size_mult);
+for (line_index = 0; line_index < file_type_count; line_index ++)	//
 	{
 	if (sfflags->progress)
 		{
-		if (progress_count == progress_interval)
-			{
-			fprintf (stderr, "%c%d%%", CGE_RET, progress_percent ++);
-			progress_count = 0;
-			}
-		progress_count ++;
+		file_size_accum += database_db [line_index].filesize;
+		file_progress = file_size_mult * file_size_accum;
+		fprintf (stderr, "%c%.2f%%", CGE_RET, file_progress);
 		}
 	strcpy (sha_command, SHA_CMD);
 	strcat (sha_command, enquote(database_db [line_index].filepath));
@@ -385,9 +508,13 @@ for (line_index = 0; line_index < file_type_count; line_index ++)	//
 		exit_error ("Invalid SHA256SUM from file ", database_db [line_index].filepath);
 		}
 	}
-if (sfflags->progress)
+if (sfflags->progress && sfflags->std_out == SW_OFF)
 	{
 	fprintf (stderr, "%c", CGE_RET);
+	}
+if (sfflags->std_out == SW_OFF)
+	{
+	printf ("...SHA256SUMs done.\n", file_type_count);
 	}
 
 // Sort section
@@ -409,7 +536,7 @@ while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 			}
 		if (sfflags->sort == SORT_FILE)
 			{
-				if (strcmp (database_db [inner_loop].filepath, database_db [inner_loop + 1].filepath) > 0)
+			if (strcmp (database_db [inner_loop].filepath, database_db [inner_loop + 1].filepath) > 0)
 				{
 				swap_db = database_db [inner_loop + 1];
 				database_db [inner_loop + 1] = database_db [inner_loop];
@@ -418,7 +545,7 @@ while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 				}
 			}
 		}
-	if (swap_made && outer_loop == 1)
+	if (swap_made && outer_loop == 1 && sfflags->std_out == SW_OFF)
 		{
 		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 		}
@@ -459,12 +586,48 @@ for (line_index = 0; line_index < file_type_count; line_index ++)	// data entry 
 			}
 		}
 	}
-if (!sfflags->std_out)
+if (sfflags->std_out == SW_OFF)
 	{
 	printf ("%d lines written to %s%s%s\n", file_type_count, TEXT_BLUE, database_filename, TEXT_RESET);
 	}
 // Clean-up section
-fclose (FIND_IN_FP);
 chdir (C_W_D);
-remove (TEMP_FILE);		// delete temp file
+
+}
+
+
+char filter_line_check (char *filter_line)
+{
+char first_char;
+
+if (strchr (filter_line, ':') != NULL)
+	{
+	return (0);
+	}
+first_char = filter_line [0];
+if (first_char == 47)
+	{
+	return (0);
+	}
+if (first_char == 95)
+	{
+	return (0);
+	}
+if (first_char == 35)		// # char marks comment
+	{
+	return (2);
+	}
+if (first_char < 45 || first_char > 122)
+	{
+	return (0);
+	}
+if (first_char < 65 && first_char > 57)
+	{
+	return (0);
+	}
+if (first_char < 97 && first_char > 90)
+	{
+	return (0);
+	}
+return (1);
 }
