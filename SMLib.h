@@ -46,6 +46,14 @@ struct sha_database
 	char dataset [DATASET_LENGTH];
 	};
 
+struct sfind_database
+	{
+	char sha [SHA_LENGTH + 1];
+	char filepath [FILEPATH_LENGTH];
+	char dataset [DATASET_LENGTH];
+	int filesize;
+	};
+
 struct shamatch_flags
 	{
 	char d_out;			// print results from database
@@ -60,7 +68,7 @@ struct shamatch_flags
 	char shamatch_found;
 	};
 
-struct shafind_flags
+struct sfind_flags
 	{
 	char sort;			// sort by either field or not
 	char std_out;			// print output to stdout, supress file output
