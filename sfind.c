@@ -18,7 +18,7 @@
 #include "SMLib.h"
 
 #define PROG_VERSION "0.46"
-#define FILTER_PROG_NAME "NFind"
+#define FILTER_PROG_NAME "SFind"
 #define SHA_CMD "sha256sum "
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
@@ -37,14 +37,9 @@
 #define NUM_OF_TEMP_FILES 2
 #define F_INCL 1
 #define F_EXCL 2
-#define F_INCL 1
-#define F_EXCL 2
-#define FILTER_INITIAL_SIZE 64
-#define FILTER_INCREMENT 64
-#define FILTER_CEILING 1024
-#define FIND_LIST_INITIAL_SIZE 1024
-#define FIND_LIST_INCREMENT 1024
-#define FIND_LIST_CEILING 262144
+#define FILTER_INITIAL_SIZE 256
+#define FILTER_INCREMENT 256
+#define FILTER_CEILING 4096
 #define T_DIR 'd'
 #define T_FIL 'f'
 #define T_REJ 'r'
@@ -78,7 +73,6 @@ char filter_line_check (char *filter_line);
 int main (int argc, char *argv [])
 
 {
-
 struct sfind_database *database_db, swap_db;
 struct sfind_flags sfflags [1] = {0};
 struct dirent *dir_ents;
@@ -273,8 +267,8 @@ if (sfflags->std_out == SW_OFF)
 	}
 strcpy (database_filename, database_dataset);		// compose output filename
 strcat (database_filename, database_extension);
-find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * FIND_LIST_INITIAL_SIZE);
-find_list_curr_size = FIND_LIST_INITIAL_SIZE;
+find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * DATABASE_INITIAL_SIZE);
+find_list_curr_size = DATABASE_INITIAL_SIZE;
 getcwd (C_W_D, 256);		// get present working directory
 strcat (C_W_D, SLASH_TERM);
 DIR_PATH = opendir (PATH_CURRENT);		// open directory
@@ -306,7 +300,7 @@ if (DIR_PATH != NULL)
 			}
 		if (find_list_write + 1 == find_list_curr_size)
 			{
-			find_list_curr_size += FIND_LIST_INCREMENT;
+			find_list_curr_size += DATABASE_INCREMENT;
 			find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
 			}
 		find_list_write ++;
@@ -353,7 +347,7 @@ while (find_list_read < find_list_write)
 				strcat (find_list [find_list_write].filepath, dir_ents->d_name);
 				if (find_list_write + 1 == find_list_curr_size)
 					{
-					find_list_curr_size += FIND_LIST_INCREMENT;
+					find_list_curr_size += DATABASE_INCREMENT;
 					find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
 					}
 				if (sfflags->verbose)								// append entry to temp file ^^^
@@ -368,8 +362,6 @@ while (find_list_read < find_list_write)
 //			{
 //			perror ("Couldn't open the directory");		// FIX
 //			}
-
-
 		}
 	find_list_read ++;
 	}

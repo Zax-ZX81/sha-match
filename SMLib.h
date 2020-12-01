@@ -24,6 +24,9 @@
 #define NULL_TERM '\0'
 #define SHA256_EXTENSION ".sha256"
 #define S2DB_EXTENSION ".s2db"
+#define DATABASE_INITIAL_SIZE 4096
+#define DATABASE_INCREMENT 4096
+#define DATABASE_CEILING 262144
 
 #if __linux__
 #define TEXT_RESET "\33[0m"
