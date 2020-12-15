@@ -64,6 +64,7 @@ struct shamatch_flags
 	char multi;			// print all occurances of the same file that matches
 //	char test;			// for testing
 	char searchlist_type;		// search list filetype
+	char zero;			// output matches with zero file size
 	char database_type;		// database filetype
 	char dataset_match;		// match found for current target
 	char dataset_conflict;		// at least one data set conflict found
@@ -78,8 +79,8 @@ struct sfind_flags
 	char database_type;		// database filetype
 	char verbose;			// mirror everything to stdout
 	char filtering;			// read filter file
-	char output_current;
-	char progress;
+	char output_current;		// current line matches filter
+	char progress;			// print progress for SHA256SUM generation
 	};
 
 struct hex_lookup_line		// hex lookup table line
