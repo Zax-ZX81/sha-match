@@ -19,7 +19,6 @@
 
 #define PROG_VERSION "0.46"
 #define FILTER_PROG_NAME "SFind"
-#define SHA_CMD "sha256sum "
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
 #define FILTER_OUT "sf_filter-o"
@@ -43,16 +42,20 @@
 #define T_DIR 'd'
 #define T_FIL 'f'
 #define T_REJ 'r'
-#define T_COM 'h'
+#define T_COM 'c'
+#define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n"
 
 #if __linux__
 #define DIR_TYPE 4
 #define FILE_TYPE 8
+#define SHA_CMD "sha256sum "
 #endif
 
 #if _WIN32
 #define DIR_TYPE 16
 #define FILE_TYPE 0
+#define SHA_CMD "certutil -hashfile "
+#define SHA_CMD_ARG " sha256"
 #endif
 
 struct find_list_entry
@@ -485,10 +488,30 @@ for (line_index = 0; line_index < file_type_count; line_index ++)
 		file_progress = file_size_mult * file_size_accum;
 		fprintf (stderr, "%c%.2f%%", CGE_RET, file_progress);
 		}
-	strcpy (sha_command, SHA_CMD);
-	strcat (sha_command, enquote(database_db [line_index].filepath));
-	SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
-	fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+//printf ("\n%s\n", database_db [line_index].filepath);
+#if _WIN32											//### Windows SHA256 generation ###
+	if (database_db [line_index].filesize == 0)		// handle zero file size because of certutil failure
+		{
+		strcpy (sha_line, SHA_ZERO);				// insert zero SHA256SUM
+//printf ("%s\n", sha_line);
+		}
+		else
+		{
+		strcpy (sha_command, SHA_CMD);						// compose command
+		strcat (sha_command, enquote (database_db [line_index].filepath));
+		strcat (sha_command, SHA_CMD_ARG);
+		SHA_PIPE = popen (sha_command, "r");				// send SHA256SUM command and arguments
+		fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// throw first line away
+		fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+//printf (">%s<\t%d\n", sha_line, strlen (sha_line));
+		}
+#endif
+#if __linux__											//### Linux SHA256 generation ###
+	strcpy (sha_command, SHA_CMD);						// compose command
+	strcat (sha_command, enquote (database_db [line_index].filepath));
+	SHA_PIPE = popen (sha_command, "r");				// send SHA256SUM command and arguments
+	fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+#endif
 	if (sha_verify (sha_line))		// verify SHA256SUM
 		{
 		strncpy (database_db [line_index].sha, sha_line, SHA_LENGTH);		// enter SHA256SUM into database
@@ -502,6 +525,7 @@ for (line_index = 0; line_index < file_type_count; line_index ++)
 		}
 		else
 		{
+//printf ("%d\n", sha_verify (sha_line));
 		exit_error ("Invalid SHA256SUM from file ", database_db [line_index].filepath);
 		}
 	}
@@ -513,6 +537,7 @@ if (sfflags->std_out == SW_OFF)
 		fprintf (stderr, "%c", CGE_RET);
 		}
 	}
+//printf ("Got here.\n");
 
 // Sort section
 outer_loop = 0;

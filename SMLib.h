@@ -16,9 +16,11 @@
 #define UNKNOWN_TYPE 0
 #define SHA256_TYPE 1
 #define S2DB_TYPE 2
+#define CERTUTIL_SHA256 3
 #define FILE_ARG 2
 #define SPACE_CHAR 32
 #define TAB_CHAR 9
+#define RET_CHAR 10
 #define SW_ON 1
 #define SW_OFF 0
 #define NULL_TERM '\0'
