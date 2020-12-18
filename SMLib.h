@@ -16,14 +16,19 @@
 #define UNKNOWN_TYPE 0
 #define SHA256_TYPE 1
 #define S2DB_TYPE 2
+#define CERTUTIL_SHA256 3
 #define FILE_ARG 2
 #define SPACE_CHAR 32
 #define TAB_CHAR 9
+#define RET_CHAR 10
 #define SW_ON 1
 #define SW_OFF 0
 #define NULL_TERM '\0'
 #define SHA256_EXTENSION ".sha256"
 #define S2DB_EXTENSION ".s2db"
+#define DATABASE_INITIAL_SIZE 4096
+#define DATABASE_INCREMENT 4096
+#define DATABASE_CEILING 262144
 
 #if __linux__
 #define TEXT_RESET "\33[0m"
@@ -61,6 +66,7 @@ struct shamatch_flags
 	char multi;			// print all occurances of the same file that matches
 //	char test;			// for testing
 	char searchlist_type;		// search list filetype
+	char zero;			// output matches with zero file size
 	char database_type;		// database filetype
 	char dataset_match;		// match found for current target
 	char dataset_conflict;		// at least one data set conflict found
@@ -75,8 +81,8 @@ struct sfind_flags
 	char database_type;		// database filetype
 	char verbose;			// mirror everything to stdout
 	char filtering;			// read filter file
-	char output_current;
-	char progress;
+	char output_current;		// current line matches filter
+	char progress;			// print progress for SHA256SUM generation
 	};
 
 struct hex_lookup_line		// hex lookup table line

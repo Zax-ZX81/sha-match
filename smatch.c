@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Match 0.32         *
+ *        SHA-Match 0.33         *
  *                               *
- *        2020-11-01             *
+ *        2020-12-01             *
  *                               *
  *        Zax                    *
  *                               *
@@ -13,16 +13,12 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.32"
-
+#define PROG_VERSION "0.33"
 
 int main (int argc, char *argv [])
 
 {
-
 const char hex_string [16] = "0123456789abcdef";
-const char text_reset [] = TEXT_RESET;
-const char text_orange [] = TEXT_ORANGE;
 
 FILE *SEARCHLIST_FP, *DATABASE_FP;
 
@@ -30,7 +26,8 @@ int arg_no, switch_pos;		// args section
 int searchlist_ferr;		// search list file error
 int search_index;			// search list line counter
 int searchlist_lines = 0;	// number of lines in search list
-int line_index;
+int searchlist_alloc_size = DATABASE_INITIAL_SIZE;
+int line_index = 0;
 int database_ferr;			// database file error
 int outer_loop = 0, inner_loop;		// counters for sort loops
 
@@ -59,7 +56,6 @@ for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// initialise hex lookup table
 	hex_lookup [(int) hex_idx].first = 0;
 	hex_lookup [(int) hex_idx].last = 0;
 	}
-
 
 // Arguments section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -121,16 +117,12 @@ if (DATABASE_FP == NULL)
 	exit_error ("Can't find Database: ", database_filename);
 	}
 
-
 // Search list load section
-do	// count lines in searchlist for memory allocation
+searchlist_db = (struct sha_database *) malloc (sizeof (struct sha_database) * searchlist_alloc_size);
+do
 	{
 	searchlist_ferr = (long)fgets (fileline, FILEPATH_LENGTH, SEARCHLIST_FP);
-	if (fileline != NULL && searchlist_ferr)
-		{
-		searchlist_lines ++;
-		}
-	if (searchlist_lines == 1)
+	if (searchlist_lines == 0)
 		{
 		smflags->searchlist_type = sha_verify (fileline);
 		if (smflags->searchlist_type == UNKNOWN_TYPE)
@@ -138,36 +130,36 @@ do	// count lines in searchlist for memory allocation
 			exit_error ("Unrecognised file type: ", searchlist_filename);
 			}
 		}
+	if (fileline != NULL && searchlist_ferr)
+		{
+		if (smflags->searchlist_type == SHA256_TYPE)		// load standard SHA256SUM output
+			{
+			strncpy (searchlist_db [searchlist_lines].sha, fileline, SHA_LENGTH);
+			searchlist_db [searchlist_lines].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (searchlist_db [searchlist_lines].filepath, fileline + SHA_LENGTH + 2);
+			searchlist_db [searchlist_lines].filepath[strlen (searchlist_db [searchlist_lines].filepath) - 1] = NULL_TERM;
+			strcpy (searchlist_db [searchlist_lines].dataset, "");	// added just in case
+			}
+			else		// load SHA256DB data
+			{
+			separate_fields (searchlist_db [searchlist_lines].sha, searchlist_db [searchlist_lines].filepath, searchlist_db [searchlist_lines].dataset, fileline);
+			}
+		}
+	if (searchlist_lines + 1 == searchlist_alloc_size)		// check memory usage, reallocate
+		{
+		searchlist_alloc_size += DATABASE_INCREMENT;
+		searchlist_db = (struct sha_database *) realloc (searchlist_db, sizeof (struct sha_database) * searchlist_alloc_size);
+		}
+	searchlist_lines ++;
 	} while (!feof (SEARCHLIST_FP));
-//searchlist_lines ++;
-
-rewind (SEARCHLIST_FP);	// return to the start of searchlist for data entry
-searchlist_db = (struct sha_database *) malloc (sizeof (struct sha_database) * searchlist_lines);
-
-for (line_index = 0; line_index < searchlist_lines; line_index ++)	// data entry for searchlist
-	{
-	fgets (fileline, FILEPATH_LENGTH, SEARCHLIST_FP);
-	if (smflags->searchlist_type == SHA256_TYPE)		// load standard SHA256SUM output
-		{
-		strncpy (searchlist_db [line_index].sha, fileline, SHA_LENGTH);
-		searchlist_db [line_index].sha [SHA_LENGTH] = NULL_TERM;
-		strcpy (searchlist_db [line_index].filepath, fileline + SHA_LENGTH + 2);
-		searchlist_db [line_index].filepath[strlen (searchlist_db [line_index].filepath) - 1] = NULL_TERM;
-		strcpy (searchlist_db [line_index].dataset, "");	// added just in case
-		}
-		else		// load SHA256DB data
-		{
-		separate_fields (searchlist_db [line_index].sha, searchlist_db [line_index].filepath, searchlist_db [line_index].dataset, fileline);
-		}
-	}
 fclose (SEARCHLIST_FP);
 
 // Sort section
-outer_loop = 0;
-while (outer_loop < searchlist_lines && swap_made == TRUE)
+outer_loop = 1;
+while (outer_loop < 10 && swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (inner_loop = 0; inner_loop < searchlist_lines - 1; inner_loop ++)
+	for (inner_loop = 0; inner_loop < searchlist_lines - 2; inner_loop ++)
 		{
 		if (strcmp (searchlist_db [inner_loop].sha, searchlist_db [inner_loop + 1].sha) > 0)
 			{
@@ -212,7 +204,6 @@ for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// build search list index - second
 		}
 	}
 hex_lookup [hex_idx - 1].last = line_index;	// set last line
-
 
 // Search section
 do
@@ -298,10 +289,9 @@ do
 	strcpy (database_sha_prev, database_db->sha);
 	} while (!feof (DATABASE_FP));
 
-	
 if (smflags->dataset_conflict)
 	{
-	printf ("%s# Some results excluded because of dataset conflict%s\n", text_orange, text_reset);
+	printf ("%s# Some results excluded because of dataset conflict%s\n", TEXT_ORANGE, TEXT_RESET);
 	}
 
 fclose (DATABASE_FP);

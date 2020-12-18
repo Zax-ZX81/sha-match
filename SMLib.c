@@ -24,7 +24,6 @@ char sha_verify (char *fileline)
 int char_index;
 char *char_pos;
 const char hex_string [16] = "0123456789abcdef";
-
 for (char_index = 0; char_index < SHA_LENGTH; char_index ++)
 	{
 	char_pos = strchr (hex_string, fileline [char_index]);
@@ -33,6 +32,7 @@ for (char_index = 0; char_index < SHA_LENGTH; char_index ++)
 		return (UNKNOWN_TYPE);
 		}
 	}
+//printf (">%s<__%d\t%d_%d__\n", fileline, char_index, fileline [char_index - 1], fileline [char_index]);
 if (fileline [char_index] == SPACE_CHAR)
 	{
 	return (SHA256_TYPE);
@@ -40,6 +40,10 @@ if (fileline [char_index] == SPACE_CHAR)
 if (fileline [char_index] == TAB_CHAR)
 	{
 	return (S2DB_TYPE);
+	}
+if (fileline [char_index] == RET_CHAR)
+	{
+	return (CERTUTIL_SHA256);
 	}
 return (UNKNOWN_TYPE);
 }

@@ -79,8 +79,8 @@ _dataset.s2db_ - three column output, `tab` separated.  1: SHA256, 2: filepath, 
 The search in __smatch__ requires that the _searchlist_ is sorted by _SHA256_.  If it isn’t already, __smatch__ will sort it.  The sort is slow.  As you’re likely to generate a ___dataset___ once but use it with __smatch__ multiple times, __sfind__ sorts its output by _SHA256_ checksums by default.  That sort is also slow.  The search itself, however, is fast.
 
 ### Portability
-I used only standard _C_ functions for all the programs.  Both __sfind__ and __scheck__ use `sha256sum` via _popen()_ to calculate _SHA256_ checksums.
-All the programs build in _GNU/Linux_ and _Windows_ (with _MinGW_), and would probably on _Mac_ too, but that's untested.  _Windows_ requires `sha256sum` in the command path to run __sfind__ and __scheck__.  The _Windows_ native utilities `certutil` and `get-filehash` both produce _SHA256_ checksums, but `certutil` refuses to do checksums on empty files and I couldn't coax `get-filehash` to run via _popen()_.  The output in _Linux_ is coloured; in _Windows_ it's black and white.
+I used only standard _C_ functions for all the programs.  Both __sfind__ and __scheck__ use popen() to get SHA256SUMs - from `sha256sum` in _Linux_ and `certutil` in _Windows_.
+All the programs build in _GNU/Linux_ and _Windows_ (with _MinGW_), and would probably on _Mac_ too, but that's untested.  The output in _Linux_ is coloured; in _Windows_ it's black and white.
 
 __sfind__ uses _dirent.h_ to mimic the _GNU/Linux_ `find` command, building a list of files/directories in the current directory to generate checksums for.
 
