@@ -92,4 +92,3 @@ If you want to steal this, I'll meet you in the carpark.
 
 ### Author
 Bob Hayward (Zax) zx81@zx81.nz
-sfind uses popen() to get SHA256SUMs - from sha256sum in Linux and certutil in Windows.
