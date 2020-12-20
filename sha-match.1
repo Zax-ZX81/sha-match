@@ -4,7 +4,7 @@
 sha-match \- a simple system for cataloguing and managing files using SHA256
 .SH SYNOPSIS
 .B smatch
-[\fI\,dimV\/\fR] \fI\,searchlist\/\fR
+[\fI\,dimVz\/\fR] \fI\,searchlist\/\fR
 \fI\,database\/\fR
 .PP
 .B sfind
@@ -46,6 +46,10 @@ Print all matches for a file if there are multiples.
 .TP
 .B \fB-V\fR
 Print version information.
+.PP
+.TP
+.B \fB-z\fR
+Show matches with zero file size.  Suppressed by default.  Combine with \fB-m\fR to show all of them.
 .SS sfind
 This generates a dataset for the current directory, equivalent to 'find
 -type f | sha256sum > dataset.sha256'.
@@ -114,11 +118,12 @@ This converts a plain \fISHA256\fR file to a \fIs2db\fR file.
 .SH FILES
 .TP
 .B sf_filter
-File listing the names of files/directories in the current directory to
-be included/excluded from the file search.
+File listing the names of files/directories to be included/excluded from the file search.
 Can be generated with 'ls > sf_filter' and then edited as needed.
+Any directories in \fBsf_filter\fR will include/exclude all items to maximum depth in that directory.
+Files/directories multiple directories deep can be picked out, ie .cache/mozilla/firefox can be used to exclude the Firefox cache from a user directory.
 .TP
-.B .scheck_db
+.B ~/.scheck_db
 File that stores the name of the last database file that \fIscheck\fR used sucessfully.
 This database will be used until another is specified.
 .TP
