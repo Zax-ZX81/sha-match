@@ -85,7 +85,7 @@ All the programs build in _GNU/Linux_ and _Windows_ (with _MinGW_), and would pr
 __sfind__ uses _dirent.h_ to mimic the _GNU/Linux_ `find` command, building a list of files/directories in the current directory to generate checksums for.
 
 ### Bugs
-I'm not a natural coder.  My debugging strategy mainly consists of putting in heaps of _printf_ statements everywhere to try to figure out what the hell is going wrong.  Crashes in these programs now seem to be related to trying to close a file that isn't open or due to my misunderstanding the correct use of _malloc_.  __sfind__ sends filenames to `sha256sum` enclosed in double quotes to account for spaces and other non-standard characters, but that sometimes fails - with \` (backtick) for example.
+I'm not a natural coder.  My debugging strategy mainly consists of putting in heaps of _printf_ statements everywhere to try to figure out what the hell is going wrong.  Crashes in these programs now seem to be related to trying to close a file that isn't open or due to my misunderstanding the correct use of _malloc_.  __sfind__ sends filenames to `sha256sum` enclosed in double quotes to account for spaces and other non-standard characters, but that sometimes fails - with \` (backtick) for example.  The internal sort routine in __smatch__ fails with searchlists of more than about 13000 lines.  I've no idea why.
 
 ### Copyleft
 If you want to steal this, I'll meet you in the carpark.

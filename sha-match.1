@@ -145,8 +145,8 @@ The search itself, however, is fast.
 \fIsfind\fR uses popen() to get SHA256SUMs - from \fIsha256sum\fR in Linux and \fIcertutil\fR in Windows.
 .SH BUGS
 .PP
-Doesn\[cq]t use zero-delimited file names, so is subject to errors
-caused by strange characters in file names, especially '\[ga]'.
+The internal sort in \fIsmatch\fR fails when trying to sort a \fIsearchlist\fR with more than about 13000 lines.  So don't do that.
+Doesn\[cq]t use zero-delimited file names, so is subject to errors caused by strange characters in file names, especially '\[ga]'.
 Generally doesn\[cq]t get stuck in infinite loops; it just core dumps.
 .SH COPYLEFT
 .PP
