@@ -14,6 +14,7 @@
 #include "SMLib.h"
 
 #define PROG_VERSION "0.33"
+#define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 int main (int argc, char *argv [])
 
@@ -79,6 +80,9 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				case 'V':
 					printf ("SHA Match version %s\n", PROG_VERSION);
 					exit (0);
+				case 'z':
+					smflags->zero = SW_ON;
+					break;
 				default:
 					exit_error ("# SHA Match [dimV] <search file> <database file>\n","");
 				}	// END switch
@@ -156,7 +160,7 @@ fclose (SEARCHLIST_FP);
 
 // Sort section
 outer_loop = 1;
-while (outer_loop < 10 && swap_made == TRUE)
+while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
 	for (inner_loop = 0; inner_loop < searchlist_lines - 2; inner_loop ++)
@@ -206,6 +210,7 @@ for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// build search list index - second
 hex_lookup [hex_idx - 1].last = line_index;	// set last line
 
 // Search section
+printf ("ZS=%d\n", smflags->zero);
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
@@ -279,6 +284,10 @@ do
 			{
 			strcpy (output_line, three_fields (database_db->sha, database_db->filepath, database_db->dataset));
 			}
+		}
+	if (!strcmp (database_db->sha, SHA_ZERO) && !smflags->zero)		// supress output for zero size files if switch not set
+		{
+		smflags->shamatch_found = FALSE;
 		}
 	if ((smflags->shamatch_found && !smflags->dataset_match && !smflags->invert) || (!smflags->shamatch_found && smflags->invert))
 		{
