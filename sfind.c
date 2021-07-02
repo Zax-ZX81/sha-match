@@ -562,9 +562,17 @@ while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 				}
 			}
 		}
-	if (swap_made && outer_loop == 1 && sfflags->std_out == SW_OFF)		// show that we're sorting
+	if (outer_loop == 1 && swap_made)
 		{
-		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
+		if (file_type_count > SORT_MAX_LINES)		// abandon sort if file too big
+			{
+			printf ("# %sNot sorting, file too big.%s\n", TEXT_YELLOW, TEXT_RESET);
+			sfflags->sort == SORT_NONE;
+			}
+		if (sfflags->sort > SORT_NONE)		// show that we're sorting
+			{
+			printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
+			}
 		}
 	outer_loop ++;
 	}

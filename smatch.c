@@ -175,7 +175,14 @@ while (swap_made == TRUE)
 		}
 	if (outer_loop == 2 && swap_made)
 		{
-		printf ("#  Sorting search list...\n");
+		if (searchlist_lines > SORT_MAX_LINES)           // abandon sort if file too big
+			{
+			fclose (DATABASE_FP);
+			free (searchlist_db);           // free memory
+			searchlist_db = NULL;
+			exit_error ("Not sorting, file has too many lines: ", searchlist_filename);
+			}
+		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 		}
 	outer_loop ++;
 	}
