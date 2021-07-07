@@ -217,7 +217,6 @@ for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// build search list index - second
 hex_lookup [hex_idx - 1].last = line_index;	// set last line
 
 // Search section
-printf ("ZS=%d\n", smflags->zero);
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);

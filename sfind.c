@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Find 0.47             *
+ *     SHA-Find 0.48             *
  *                               *
- *     2020-12-17                *
+ *     2021-07-06                *
  *                               *
  *     Zax                       *
  *                               *
@@ -17,11 +17,11 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.46"
+#define PROG_VERSION "0.48"
 #define FILTER_PROG_NAME "SFind"
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
-#define FILTER_OUT "sf_filter-o"
+#define FILTER_BK ".sf_filter"
 #define FILE_ENTRY 'f'
 #define DIR_ENTRY 'd'
 #define UNKNOWN_ENTRY 'x'
@@ -448,7 +448,9 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 //Output verified filter section
 if (sfflags->filtering > 0)
 	{
-	FILOUT_FP = fopen (FILTER_OUT, "w");
+//rename old filter
+	rename (FILTER_FILE, FILTER_BK);
+	FILOUT_FP = fopen (FILTER_FILE, "w");
 	if (FILOUT_FP == NULL)
 		{
 		exit_error ("Can't open filter for writing", "");
@@ -574,7 +576,7 @@ while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 			printf ("# %sNot sorting, file too big.%s\n", TEXT_YELLOW, TEXT_RESET);
 			sfflags->sort = SORT_NONE;
 			}
-		if (sfflags->sort > SORT_NONE)		// show that we're sorting
+		if (sfflags->sort != SORT_NONE)		// show that we're sorting
 			{
 			printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 			}
