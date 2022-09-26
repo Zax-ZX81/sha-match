@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Find 0.48             *
+ *     SHA-Find 0.49             *
  *                               *
  *     2021-07-06                *
  *                               *
@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.48"
+#define PROG_VERSION "0.49"
 #define FILTER_PROG_NAME "SFind"
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
@@ -85,6 +85,7 @@ struct filter_entry *filter_list;
 sfflags->database_type = S2DB_TYPE;		// default file type S2DB
 sfflags->sort = SORT_SHA;			// sort by SHA256SUM by default
 sfflags->filtering = FALSE;
+sfflags->progress = SW_ON;			// show progress by default
 
 FILE *SHA_PIPE;
 FILE *FILTER_FP;				// inclusion and exclusion filter list
@@ -146,11 +147,11 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				case 'i':
 					sfflags->filtering = F_INCL;
 					break;
+				case 'n':
+					sfflags->progress = SW_OFF;
+					break;
 				case 'o':
 					sfflags->database_type = SHA256_TYPE;
-					break;
-				case 'p':
-					sfflags->progress = SW_ON;
 					break;
 				case 's':
 					sfflags->std_out = SW_ON;				// if std_out only, supress file opening/writing
@@ -168,7 +169,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					sfflags->filtering = F_EXCL;
 					break;
 				default:
-					exit_error ("# SHA find [-fnosuv] <search file> <database file>\n","");
+					exit_error ("# SHA find [-finosuvVx] <search file> <database file>\n","");
 					break;
 				}	// END switch
 			}	// END for switch_pos
