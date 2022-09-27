@@ -5,7 +5,7 @@ A simple system for cataloguing and managing files using _SHA256_.
 
 __smatch__ [dimV] _searchlist database_
 
-__sfind__ [fiopsuvVx] _dataset_
+__sfind__ [finosuvVx] _dataset_
 
 __scheck__ [V] _search-file_ [-d _database-file_]
 
