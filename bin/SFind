@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# SFind list
+# bash script fallback for sfind(bin)
+
+find -type f | cut -b 3- | grep -v .SFind > .SFind_filelist
+cat .SFind_filelist | xargs sha256sum | cut -b -64 > .SFind_sha
+cat .SFind_filelist | sed s/^.*$/$1/ > .SFind_dbname
+paste -d '\t' .SFind_sha .SFind_filelist .SFind_dbname | sort > $1.s2db
+rm .SFind_*
