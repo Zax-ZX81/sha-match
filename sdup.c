@@ -2,7 +2,7 @@
  *                               *
  *        SHA-Dup 0.1            *
  *                               *
- *        2020-11-19             *
+ *        2022-10-14             *
  *                               *
  *        Zax                    *
  *                               *
@@ -25,6 +25,14 @@
 #define NO_MARK 'N'
 #define NULL_STRING ""
 
+struct sdup_database
+	{
+	char sha [SHA_LENGTH + 1];
+	char filepath [FILEPATH_LENGTH];
+	char dataset [DATASET_LENGTH];
+	int dup_num;
+	};
+
 int main (int argc, char *argv [])
 
 {
@@ -44,9 +52,11 @@ char match_found = FALSE;				// if match is found
 char dataset_out = TRUE;
 char output_choice = ALL_OUT;
 char mark_first = WITH_COLOUR;
+char zero_sha = FALSE;
 
 struct sha_database database_db [1] = {0};		// fields for database
 struct sha_database previous_line [1] = {0};		// fields for search file
+struct sdup_database *sdup_db;				// sha database for duplicates
 
 // Arguments section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -80,11 +90,14 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				case 'm':
 					mark_first = WITH_HASH;
 					break;
+				case 'z':
+					zero_sha = TRUE;
+					break;
 				case 'V':
 					printf ("SHA Dup version %s\n", PROG_VERSION);
 					exit (0);
 				default:
-					exit_error ("# SHA Dup [dfFlLmV] <database file>","");
+					exit_error ("# SHA Dup [dfFlLmVz] <database file>","");
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv
@@ -177,3 +190,43 @@ do
 fclose (DATABASE_FP);
 
 }
+/* * * * * * * * * * * * * * * * *
+
+// Search list load section
+searchlist_db = (struct sha_database *) malloc (sizeof (struct sha_database) * searchlist_alloc_size);
+do
+	{
+	searchlist_ferr = (long)fgets (fileline, FILEPATH_LENGTH, SEARCHLIST_FP);
+	if (searchlist_lines == 0)
+		{
+		smflags->searchlist_type = sha_verify (fileline);
+		if (smflags->searchlist_type == UNKNOWN_TYPE)
+			{
+			exit_error ("Unrecognised file type: ", searchlist_filename);
+			}
+		}
+	if (fileline != NULL && searchlist_ferr)
+		{
+		if (smflags->searchlist_type == SHA256_TYPE)		// load standard SHA256SUM output
+			{
+			strncpy (searchlist_db [searchlist_lines].sha, fileline, SHA_LENGTH);
+			searchlist_db [searchlist_lines].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (searchlist_db [searchlist_lines].filepath, fileline + SHA_LENGTH + 2);
+			searchlist_db [searchlist_lines].filepath[strlen (searchlist_db [searchlist_lines].filepath) - 1] = NULL_TERM;
+			strcpy (searchlist_db [searchlist_lines].dataset, "");	// added just in case
+			}
+			else		// load SHA256DB data
+			{
+			separate_fields (searchlist_db [searchlist_lines].sha, searchlist_db [searchlist_lines].filepath, searchlist_db [searchlist_lines].dataset, fileline);
+			}
+		}
+	if (searchlist_lines + 1 == searchlist_alloc_size)		// check memory usage, reallocate
+		{
+		searchlist_alloc_size += DATABASE_INCREMENT;
+		searchlist_db = (struct sha_database *) realloc (searchlist_db, sizeof (struct sha_database) * searchlist_alloc_size);
+		}
+	searchlist_lines ++;
+	} while (!feof (SEARCHLIST_FP));
+fclose (SEARCHLIST_FP);
+ * * * * * * * * * * * * * * * * */
+
