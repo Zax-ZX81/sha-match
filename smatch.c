@@ -84,7 +84,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					smflags->zero = SW_ON;
 					break;
 				default:
-					exit_error ("# SHA Match [dimV] <search file> <database file>\n","");
+					exit_error ("# SHA Match [dimV] <search file> <database file>","");
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv

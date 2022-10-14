@@ -34,11 +34,11 @@ struct sha_database database_db [1] = {0};
 // Argument section
 if (argc > FILE_ARG)
 	{
-	exit_error ("Too many arguments.  SHA convert <SHA_FILE.sha256>\n","");
+	exit_error ("Too many arguments.  SHA convert <SHA_FILE.sha256>","");
 	}
 if (argc < FILE_ARG)
 	{
-	exit_error ("One argument needed.  SHA convert <SHA_FILE.sha256>\n","");
+	exit_error ("One argument needed.  SHA convert <SHA_FILE.sha256>","");
 	}
 strncpy (searchlist_filename, argv [FILE_ARG - 1], FILEPATH_LENGTH);
 if (strlen (searchlist_filename) < strlen (SHA256_EXTENSION) || strchr (searchlist_filename, '.') == NULL)

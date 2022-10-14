@@ -79,7 +79,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					printf ("SHA Check version %s\n", PROG_VERSION);
 					exit (0);
 				default:
-					exit_error ("# SHA Check [V] <search file> [-d <database file>]\n","");
+					exit_error ("# SHA Check [V] <search file> [-d <database file>]","");
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv

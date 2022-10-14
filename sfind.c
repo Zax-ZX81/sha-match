@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Find 0.491             *
+ *     SHA-Find 0.491            *
  *                               *
  *     2021-07-06                *
  *                               *
@@ -169,7 +169,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					sfflags->filtering = F_EXCL;
 					break;
 				default:
-					exit_error ("# SHA find [-finosuvVx] <search file> <database file>\n","");
+					exit_error ("# SHA find [-finosuvVx] <search file> <database file>","");
 					break;
 				}	// END switch
 			}	// END for switch_pos

@@ -3,7 +3,7 @@
 CC= gcc
 CFLAGS= -I.
 
-all: smatch sfind sconvert scheck
+all: smatch sfind sconvert scheck sdup
 
 smatch:	smatch.c SMLib.c
 	$(CC) -o bin/smatch smatch.c SMLib.c $(CFLAGS)
@@ -16,6 +16,8 @@ sconvert: sconvert.c SMLib.c
 
 scheck: scheck.c SMLib.c
 	$(CC) -o bin/scheck scheck.c SMLib.c $(CFLAGS)
+sdup: sdup.c SMLib.c
+	$(CC) -o bin/sdup sdup.c SMLib.c $(CFLAGS)
 
 install:
-	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck sha-match.1 ~/bin/
+	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup sha-match.1 ~/bin/
