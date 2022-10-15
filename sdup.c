@@ -41,7 +41,8 @@ FILE *DATABASE_FP;
 
 int arg_no, switch_pos;		// args section
 int database_ferr;		// database file error
-int database_line =0;
+int database_line = 0;
+int last_line;
 int dup_count = 0;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 
@@ -117,85 +118,7 @@ if (DATABASE_FP == NULL)
 	exit_error ("Can't find Database: ", database_filename);
 	}
 
-// Search section
-do
-	{
-	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
-	if (database_first_line)	// if database first line, sha_verify
-		{
-		database_type = sha_verify (fileline);
-		if (database_type == UNKNOWN_TYPE)
-			{
-			fclose (DATABASE_FP);
-			exit_error ("Unrecognised file type: ", database_filename);
-			}
-		database_first_line = SW_OFF;
-		}
-	if (fileline != NULL && database_ferr)
-		{
-		if (database_type == SHA256_TYPE)			// load standard SHA256SUM output
-			{
-			strncpy (database_db->sha, fileline, SHA_LENGTH);		// enter SHA256SUM into field
-			database_db->sha[SHA_LENGTH] = NULL_TERM;
-			strcpy (database_db->filepath, fileline + SHA_LENGTH + 2);	// enter filepath into field
-			database_db->filepath[strlen (database_db->filepath) - 1] = NULL_TERM;
-			strcpy (database_db->dataset, database_filename);		// enter database filename as dataset
-			}
-			else						// load S2DB data
-			{
-			separate_fields (database_db->sha, database_db->filepath, database_db->dataset, fileline);
-			}
-		if (!strcmp (previous_line->sha, database_db->sha))	// SHA256SUMs match
-			{
-			if (!match_found)	// first duplicate
-				{
-				if (mark_first == WITH_COLOUR)
-					{
-					printf ("%s%s%s", TEXT_YELLOW, previous_line->filepath, TEXT_RESET);
-					}
-				if (mark_first == WITH_HASH)
-					{
-					printf ("#%s", previous_line->filepath);
-					}
-				if (dataset_out)
-					{
-					printf ("\t%s\n%s\t%s\n", previous_line->dataset, database_db->filepath, database_db->dataset);
-					}
-					else
-					{
-					printf ("\n%s\n", database_db->filepath);
-					}
-				}
-				else		// subsequent duplicates
-				{
-				if (dataset_out)
-					{
-					printf ("%s\t%s\n", database_db->filepath, database_db->dataset);
-					}
-					else
-					{
-					printf ("%s\n", database_db->filepath);
-					}
-				}
-			match_found = TRUE;
-			}
-			else		// no match, so update previous
-			{
-			strcpy (previous_line->sha, database_db->sha);
-			strcpy (previous_line->filepath, database_db->filepath);
-			strcpy (previous_line->dataset, database_db->dataset);
-			match_found = FALSE;
-			}
-		}
-
-	} while (!feof (DATABASE_FP));
-
-fclose (DATABASE_FP);
-
-}
-/* * * * * * * * * * * * * * * * *
-
-// Search list load section
+// Database load section
 sdup_db = (struct sdup_database *) malloc (sizeof (struct sdup_database) * database_alloc_size);
 do
 	{
@@ -250,5 +173,55 @@ do
 	database_line ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
- * * * * * * * * * * * * * * * * */
+last_line = database_line;
+for (database_line = 0; database_line < last_line; database_line++)
+	{
+	if (sdup_db [database_line].dup_num)	// Dup number not 0
+		{
+		if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_OUT || output_choice == ONLY_FIRST || output_choice == ALL_BUT_LAST))	// first duplicate
+			{
+			switch (mark_first)
+				{
+				case WITH_COLOUR:
+					printf ("%s%s%s", TEXT_YELLOW, sdup_db [database_line].filepath, TEXT_RESET);
+					break;
+				case WITH_HASH:
+					printf ("#%s", sdup_db [database_line].filepath);
+					break;
+				default:
+					printf ("%s", sdup_db [database_line].filepath);
+				}
+			if (dataset_out)
+				{
+				printf ("\t%s\n%s\t%s\n", previous_line->dataset, database_db->filepath, database_db->dataset);
+				}
+				else
+				{
+				printf ("\n%s\n", database_db->filepath);
+				}
+			}
+			else		// subsequent duplicates
+			{
+			if (dataset_out)
+				{
+				printf ("%s\t%s\n", database_db->filepath, database_db->dataset);
+				}
+				else
+				{
+				printf ("%s\n", database_db->filepath);
+				}
+			}
+		match_found = TRUE;
+		}
+		else		// no match, so update previous
+		{
+		strcpy (previous_line->sha, database_db->sha);
+		strcpy (previous_line->filepath, database_db->filepath);
+		strcpy (previous_line->dataset, database_db->dataset);
+		match_found = FALSE;
+		}
+	}
+	} while (!feof (DATABASE_FP));
+
+}
 
