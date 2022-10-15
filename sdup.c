@@ -41,6 +41,9 @@ FILE *DATABASE_FP;
 
 int arg_no, switch_pos;		// args section
 int database_ferr;		// database file error
+int database_line =0;
+int dup_count = 0;
+int database_alloc_size = DATABASE_INITIAL_SIZE;
 
 char switch_chr;		// args section
 char database_filename [FILEPATH_LENGTH] = "";
@@ -193,40 +196,59 @@ fclose (DATABASE_FP);
 /* * * * * * * * * * * * * * * * *
 
 // Search list load section
-searchlist_db = (struct sha_database *) malloc (sizeof (struct sha_database) * searchlist_alloc_size);
+sdup_db = (struct sdup_database *) malloc (sizeof (struct sdup_database) * database_alloc_size);
 do
 	{
-	searchlist_ferr = (long)fgets (fileline, FILEPATH_LENGTH, SEARCHLIST_FP);
-	if (searchlist_lines == 0)
+	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
+	if (database_line == 0)
 		{
-		smflags->searchlist_type = sha_verify (fileline);
-		if (smflags->searchlist_type == UNKNOWN_TYPE)
+		database_type = sha_verify (fileline);
+		if (database_type == UNKNOWN_TYPE)
 			{
-			exit_error ("Unrecognised file type: ", searchlist_filename);
+			fclose (DATABASE_FP);
+			exit_error ("Unrecognised file type: ", database_filename);
 			}
 		}
-	if (fileline != NULL && searchlist_ferr)
+	if (fileline != NULL && database_ferr)
 		{
-		if (smflags->searchlist_type == SHA256_TYPE)		// load standard SHA256SUM output
+		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 			{
-			strncpy (searchlist_db [searchlist_lines].sha, fileline, SHA_LENGTH);
-			searchlist_db [searchlist_lines].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (searchlist_db [searchlist_lines].filepath, fileline + SHA_LENGTH + 2);
-			searchlist_db [searchlist_lines].filepath[strlen (searchlist_db [searchlist_lines].filepath) - 1] = NULL_TERM;
-			strcpy (searchlist_db [searchlist_lines].dataset, "");	// added just in case
+			strncpy (sdup_db [database_line].sha, fileline, SHA_LENGTH);
+			sdup_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (sdup_db [database_line].filepath, fileline + SHA_LENGTH + 2);
+			sdup_db [database_line].filepath[strlen (sdup_db [database_line].filepath) - 1] = NULL_TERM;
+			strcpy (sdup_db [database_line].dataset, database_filename);	// enter database filename as dataset
 			}
 			else		// load SHA256DB data
 			{
-			separate_fields (searchlist_db [searchlist_lines].sha, searchlist_db [searchlist_lines].filepath, searchlist_db [searchlist_lines].dataset, fileline);
+			separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
 			}
 		}
-	if (searchlist_lines + 1 == searchlist_alloc_size)		// check memory usage, reallocate
+		if (database_line > 0 && !strcmp (sdup_db [database_line - 1].sha, sdup_db [database_line].sha))	// not first line and SHA256SUMs match
+			{
+			if (dup_count == 0)
+				{
+				sdup_db [database_line - 1].dup_num = 1;
+				sdup_db [database_line].dup_num = 2;
+				dup_count = 2;
+				}
+				else
+				{
+				sdup_db [database_line].dup_num = ++dup_count
+				}
+			}
+			else
+			{
+			dup_count = 0;
+			}
+
+	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
-		searchlist_alloc_size += DATABASE_INCREMENT;
-		searchlist_db = (struct sha_database *) realloc (searchlist_db, sizeof (struct sha_database) * searchlist_alloc_size);
+		database_alloc_size += DATABASE_INCREMENT;
+		sdup_db = (struct sdup_database *) realloc (sdup_db, sizeof (struct sdup_database) * database_alloc_size);
 		}
-	searchlist_lines ++;
-	} while (!feof (SEARCHLIST_FP));
-fclose (SEARCHLIST_FP);
+	database_line ++;
+	} while (!feof (DATABASE_FP));
+fclose (DATABASE_FP);
  * * * * * * * * * * * * * * * * */
 
