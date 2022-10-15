@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Dup 0.1            *
+ *        SHA-Dup 0.2            *
  *                               *
  *        2022-10-14             *
  *                               *
@@ -13,7 +13,7 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.1"
+#define PROG_VERSION "0.2"
 #define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 #define ALL_OUT 'A'
 #define ONLY_FIRST 'F'
@@ -157,7 +157,7 @@ do
 				}
 				else
 				{
-				sdup_db [database_line].dup_num = ++dup_count
+				sdup_db [database_line].dup_num = ++dup_count;
 				}
 			}
 			else
@@ -173,8 +173,9 @@ do
 	database_line ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
+
 last_line = database_line;
-for (database_line = 0; database_line < last_line; database_line++)
+for (database_line = 0; database_line <= last_line; database_line++)
 	{
 	if (sdup_db [database_line].dup_num)	// Dup number not 0
 		{
@@ -193,35 +194,16 @@ for (database_line = 0; database_line < last_line; database_line++)
 				}
 			if (dataset_out)
 				{
-				printf ("\t%s\n%s\t%s\n", previous_line->dataset, database_db->filepath, database_db->dataset);
+				printf ("\t%s", sdup_db [database_line].dataset);
 				}
-				else
-				{
-				printf ("\n%s\n", database_db->filepath);
-				}
-			}
-			else		// subsequent duplicates
+			printf ("\n");
+			} // if dup = 1
+		if (sdup_db [database_line].dup_num > 1)	// other duplicates
 			{
-			if (dataset_out)
-				{
-				printf ("%s\t%s\n", database_db->filepath, database_db->dataset);
-				}
-				else
-				{
-				printf ("%s\n", database_db->filepath);
-				}
+			printf ("%s\n", sdup_db [database_line].filepath);
 			}
-		match_found = TRUE;
-		}
-		else		// no match, so update previous
-		{
-		strcpy (previous_line->sha, database_db->sha);
-		strcpy (previous_line->filepath, database_db->filepath);
-		strcpy (previous_line->dataset, database_db->dataset);
-		match_found = FALSE;
-		}
-	}
-	} while (!feof (DATABASE_FP));
+		} // if dup found
+	} // end for loop
 
 }
 
