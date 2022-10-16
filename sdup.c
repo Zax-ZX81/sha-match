@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Dup 0.21           *
+ *        SHA-Dup 0.22           *
  *                               *
  *        2022-10-14             *
  *                               *
@@ -13,7 +13,7 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.21"
+#define PROG_VERSION "0.22"
 #define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 #define ALL_DUPES 'A'
 #define ONLY_FIRST 'F'
@@ -198,16 +198,49 @@ for (database_line = 0; database_line <= last_line; database_line++)
 						break;
 					default:
 						printf ("%s", sdup_db [database_line].filepath);
-					}
+					}	// end switch
 				if (dataset_out)
 					{
 					printf ("\t%s", sdup_db [database_line].dataset);
 					}
 				printf ("\n");
 				}	// if dup = 1
-			if (sdup_db [database_line].dup_num > 1)	// other duplicates
+			if (sdup_db [database_line].dup_num > 1 && (output_choice == ALL_DUPES || output_choice == NOT_FIRST\
+					 || output_choice == NOT_LAST || output_choice == ONLY_LAST))	// other duplicates
 				{
-				printf ("%s\n", sdup_db [database_line].filepath);
+				switch (output_choice)
+					{
+					case NOT_LAST:
+						if (sdup_db [database_line + 1].dup_num)
+							{
+							printf ("%s", sdup_db [database_line].filepath);
+							if (dataset_out)
+								{
+								printf ("\t%s", sdup_db [database_line].dataset);
+								}
+							printf ("\n");
+							}
+						break;
+					case ONLY_LAST:
+						if (!sdup_db [database_line + 1].dup_num)
+							{
+							printf ("%s", sdup_db [database_line].filepath);
+							if (dataset_out)
+								{
+								printf ("\t%s", sdup_db [database_line].dataset);
+								}
+						printf ("\n");
+							}
+						break;
+					default:
+						printf ("%s", sdup_db [database_line].filepath);
+						if (dataset_out)
+							{
+							printf ("\t%s", sdup_db [database_line].dataset);
+							}
+						printf ("\n");
+					}	// end switch
+//				printf ("%s\n", sdup_db [database_line].filepath);
 				}
 			if (sdup_db [database_line].dup_num == 1 && output_choice == ALL_UNIQUE)	// output first duplicate if all unique
 				{
