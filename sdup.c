@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Dup 0.2            *
+ *        SHA-Dup 0.21           *
  *                               *
  *        2022-10-14             *
  *                               *
@@ -13,13 +13,14 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.2"
+#define PROG_VERSION "0.21"
 #define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-#define ALL_OUT 'A'
+#define ALL_DUPES 'A'
 #define ONLY_FIRST 'F'
-#define ALL_BUT_FIRST 'f'
+#define NOT_FIRST 'f'
 #define ONLY_LAST 'L'
-#define ALL_BUT_LAST 'l'
+#define NOT_LAST 'l'
+#define ALL_UNIQUE 'u'
 #define WITH_COLOUR 'C'
 #define WITH_HASH 'H'
 #define NO_MARK 'N'
@@ -54,7 +55,7 @@ char fileline [FILELINE_LENGTH];			// input line
 char sha_line [FILELINE_LENGTH];			// sha input line
 char match_found = FALSE;				// if match is found
 char dataset_out = TRUE;
-char output_choice = ALL_OUT;
+char output_choice = ALL_DUPES;
 char mark_first = WITH_COLOUR;
 char zero_sha = FALSE;
 
@@ -76,11 +77,11 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					dataset_out = FALSE;
 					break;
 				case 'f':
-					output_choice = ONLY_FIRST;
+					output_choice = NOT_FIRST;
 					mark_first = NO_MARK;
 					break;
 				case 'F':
-					output_choice = ALL_BUT_FIRST;
+					output_choice = ONLY_FIRST;
 					mark_first = NO_MARK;
 					break;
 				case 'l':
@@ -88,20 +89,24 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					mark_first = NO_MARK;
 					break;
 				case 'L':
-					output_choice = ALL_BUT_LAST;
+					output_choice = NOT_LAST;
 					mark_first = NO_MARK;
 					break;
 				case 'm':
 					mark_first = WITH_HASH;
 					break;
-				case 'z':
-					zero_sha = TRUE;
+				case 'u':
+					output_choice = ALL_UNIQUE;
+					mark_first = NO_MARK;
 					break;
 				case 'V':
 					printf ("SHA Dup version %s\n", PROG_VERSION);
 					exit (0);
+				case 'z':
+					zero_sha = TRUE;
+					break;
 				default:
-					exit_error ("# SHA Dup [dfFlLmVz] <database file>","");
+					exit_error ("# SHA Dup [dfFlLmuVz] <database file>","");
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv
@@ -177,32 +182,46 @@ fclose (DATABASE_FP);
 last_line = database_line;
 for (database_line = 0; database_line <= last_line; database_line++)
 	{
-	if (sdup_db [database_line].dup_num)	// Dup number not 0
-		{
-		if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_OUT || output_choice == ONLY_FIRST || output_choice == ALL_BUT_LAST))	// first duplicate
+	if (!(!zero_sha && !strcmp (sdup_db [database_line].sha, SHA_ZERO)))
+		{	// zero test
+		if (sdup_db [database_line].dup_num)	// Dup number not 0
 			{
-			switch (mark_first)
+			if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_DUPES || output_choice == ONLY_FIRST || output_choice == NOT_LAST))	// first duplicate
 				{
-				case WITH_COLOUR:
-					printf ("%s%s%s", TEXT_YELLOW, sdup_db [database_line].filepath, TEXT_RESET);
-					break;
-				case WITH_HASH:
-					printf ("#%s", sdup_db [database_line].filepath);
-					break;
-				default:
-					printf ("%s", sdup_db [database_line].filepath);
-				}
-			if (dataset_out)
+				switch (mark_first)
+					{
+					case WITH_COLOUR:
+						printf ("%s%s%s", TEXT_YELLOW, sdup_db [database_line].filepath, TEXT_RESET);
+						break;
+					case WITH_HASH:
+						printf ("#%s", sdup_db [database_line].filepath);
+						break;
+					default:
+						printf ("%s", sdup_db [database_line].filepath);
+					}
+				if (dataset_out)
+					{
+					printf ("\t%s", sdup_db [database_line].dataset);
+					}
+				printf ("\n");
+				}	// if dup = 1
+			if (sdup_db [database_line].dup_num > 1)	// other duplicates
 				{
-				printf ("\t%s", sdup_db [database_line].dataset);
+				printf ("%s\n", sdup_db [database_line].filepath);
 				}
-			printf ("\n");
-			} // if dup = 1
-		if (sdup_db [database_line].dup_num > 1)	// other duplicates
-			{
-			printf ("%s\n", sdup_db [database_line].filepath);
-			}
-		} // if dup found
+			if (sdup_db [database_line].dup_num == 1 && output_choice == ALL_UNIQUE)	// output first duplicate if all unique
+				{
+				printf ("%s\t%s\t%s\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset);
+				}
+			}	// end dup found
+			else
+			{	// no dup found
+			if (output_choice == ALL_UNIQUE)
+				{
+				printf ("%s\t%s\t%s\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset);
+				}
+			}	// end no dup
+		}	// end zero test
 	} // end for loop
 
 }
