@@ -58,7 +58,7 @@ char dataset_out = TRUE;
 char output_choice = ALL_DUPES;
 char mark_first = WITH_COLOUR;
 char zero_sha = FALSE;
-
+char current_zero_sha = FALSE;
 struct sha_database database_db [1] = {0};		// fields for database
 struct sha_database previous_line [1] = {0};		// fields for search file
 struct sdup_database *sdup_db;				// sha database for duplicates
@@ -76,19 +76,19 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				case 'd':
 					dataset_out = FALSE;
 					break;
-				case 'f':
+				case NOT_FIRST:
 					output_choice = NOT_FIRST;
 					mark_first = NO_MARK;
 					break;
-				case 'F':
+				case ONLY_FIRST:
 					output_choice = ONLY_FIRST;
 					mark_first = NO_MARK;
 					break;
-				case 'l':
+				case ONLY_LAST:
 					output_choice = ONLY_LAST;
 					mark_first = NO_MARK;
 					break;
-				case 'L':
+				case NOT_LAST:
 					output_choice = NOT_LAST;
 					mark_first = NO_MARK;
 					break;
@@ -97,6 +97,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					break;
 				case 'u':
 					output_choice = ALL_UNIQUE;
+					zero_sha = TRUE;
 					mark_first = NO_MARK;
 					break;
 				case 'V':
@@ -182,7 +183,8 @@ fclose (DATABASE_FP);
 last_line = database_line;
 for (database_line = 0; database_line <= last_line; database_line++)
 	{
-	if (!(!zero_sha && !strcmp (sdup_db [database_line].sha, SHA_ZERO)))
+	current_zero_sha = strcmp (sdup_db [database_line].sha, SHA_ZERO);
+	if (!(!zero_sha && !current_zero_sha))
 		{	// zero test
 		if (sdup_db [database_line].dup_num)	// Dup number not 0
 			{
@@ -242,7 +244,7 @@ for (database_line = 0; database_line <= last_line; database_line++)
 					}	// end switch
 //				printf ("%s\n", sdup_db [database_line].filepath);
 				}
-			if (sdup_db [database_line].dup_num == 1 && output_choice == ALL_UNIQUE)	// output first duplicate if all unique
+			if ((sdup_db [database_line].dup_num == 1 && output_choice == ALL_UNIQUE) || !current_zero_sha)	// output first duplicate if all unique
 				{
 				printf ("%s\t%s\t%s\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset);
 				}

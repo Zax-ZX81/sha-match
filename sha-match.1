@@ -10,6 +10,9 @@ sha-match \- a simple system for cataloguing and managing files using SHA256
 .B sfind
 [\fI\,finosuvVx\/\fR] \fI\,dataset\/\fR
 .PP
+.B sdup
+[\fI\,dfFlLmuVz\/\fR] \fI\,dataset\/\fR
+.PP
 .B scheck
 [\fI\,V\/\fR] \fI\,search-file\/\fR
 [\fI\,\-d database-file\/\fR]
@@ -99,6 +102,44 @@ Print version information.
 .B \fB-x\fR
 \fBExclude\fR entries in 'sf_filter' from file search.
 .PP
+.SS sdup
+Searches for duplicate files within a dataset.  By default it prints a report with the first duplicate in each set highlighted in yellow. The switches \fB-f -F -l -L\fR can be used to choose which combination of duplicates is printed.
+.PP
+.TP
+.B \fB-d\fR
+Don\[cq]t print the dataset column.
+.PP
+.TP
+.B \fB-f\fR
+Print \fBall but\fR the \fBfirst\fR duplicate in each set.
+.PP
+.TP
+.B \fB-F\fR
+Print \fBonly\fR the \fBfirst\fR duplicate in each set.
+.PP
+.TP
+.B \fB-l\fR
+Print \fBall but\fR the \fBlast\fR duplicate in each set
+.PP
+.TP
+.B \fB-L\fR
+Print \fBonly\fR the \fBlast\fR duplicate in each set.
+.PP
+.TP
+.B \fB-m\fR
+Mark the first duplicate with a hash (#).  The default is to print it in yellow using ANSI colour codes that can interfere with output piped to another command.
+.PP
+.TP
+.B \fB-u\fR
+Print all unique entries according to their SHA256SUMs in s2db format.  This will include all files with zero size if any are present.
+.PP
+.TP
+.B \fB-V\fR
+Print version information.
+.PP
+.TP
+.B \fB-z\fR
+Include files with zero file size.  Suppressed by default.
 .SS scheck
 \fIscheck\fR searches for a single file in a database.  If no database is specified,
 the last verified database is used.
