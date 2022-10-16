@@ -7,6 +7,8 @@ __smatch__ [dimV] _searchlist database_
 
 __sfind__ [finosuvVx] _dataset_
 
+__sdup__ [dfFlLmuVz] _dataset_
+
 __scheck__ [V] _search-file_ [-d _database-file_]
 
 __sconvert__ _sha256file_
@@ -17,6 +19,8 @@ __sha-match__ uses _SHA256_ checksums to identify files, cataloguing collections
 __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, printing the filepaths of matching files from the _searchlist_ to the screen.
 
 __sfind__ generates a ___dataset___ for the current directory.
+
+__sdup__ searches for duplicate files within a ___dataset___.
 
 __scheck__ searches for a single file in a _database_.
 
@@ -32,7 +36,7 @@ The files you keep for your archive are fine - you can use duplicate file findin
 
 I can't remember exactly but I, at some point, generated a 200,000 file catalogue of work media files which included _SHA256_ checksums.  Perhaps so that I could check to see if a particular photo or video was identical to an archived one without having to access that 800GB of files?  So, you do a checksum on a file, then `grep` for that checksum in the archive catalogue and if the file is in there `grep` will find it.  Great.  But what if you automated that? 
 
-So I wrote some (simple, because that's all I can manage) _bash_ scripts that would generate and then compare lists with each other to show matching/redundant files.  That was the beginning of lock-down.  I wasn't in any hurry.  So, it takes ten minutes to search for 10,000 files in the 200,000 file catalogue?  Who cares?  Once things were a bit more back to normal the speed started to annoy me while I was continuing with my one-archive-to-hold-them-all project for my own files.
+So I wrote some (simple, because that's all I can manage) _bash_ scripts that would generate and then compare lists with each other to show matching/redundant files.  That was during the first 2020 lock-down.  I wasn't in any hurry.  So, it takes ten minutes to search for 10,000 files in the 200,000 file catalogue?  Who cares?  Once things were a bit more back to normal the speed started to annoy me while I was continuing with my one-archive-to-hold-them-all project for my own files.
 
 I could see the basic shape of how to approach a dedicated program version of the _bash_ scripts, so I started with _FreeBASIC_ to see if I was kidding myself.  And to see how much faster it would be.  A few days of brutal concentration and the answers were: not really, and ten times.  Vindicated and possibly deluded by my success I went back to my old favourite enemy, _C_.  Having worked out most of the problems with _BASIC_, the _C_ development was pretty smooth.  Also, _malloc_ is much more satisfying to use than just dimming a huge array and hoping for the best.  One week and --- ___four seconds___ --- for __smatch__ (_C_ version) to do what __sha-match__ (_bash_ version) did in ten minutes.  Without hardly crashing at all.
 
@@ -59,6 +63,9 @@ __smatch__ loads the _searchlist_ into a struct array, sorted by _SHA256_.  It b
 __sfind__ produces the ___datasets___ used by __smatch__ and __scheck__.  Its output is roughly the same as typing `find -type f | xargs sha256sum > dataset.sha256` on the _Linux_ command line.
 
 __sfind__ generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using __-i__ or __-x__, during the building the file list it will check for all the items in `./sf_filter` and include or exclude them accordingly.
+
+#### sdup
+__sdup__ finds duplicates within a dataset, something __smatch__ won't do.  At the time I originally started __sha-match__ I used _FSLint_ and _Duff_ for finding duplicates, but _FSLint_ no longer appears in the Fedora repository and I find _Duff_ a massive pain in the arse.  So necessity provided an incentive.  Choosing which file to keep amongst a group of duplicates is often a balance between the useful and the confusing.  You want to keep files with meaningful filenames rather than ones with character salad names - but also shed duplicates with (1) near the end of the filename from an inadvertent second download.  And the larger the set of files you're weeding the more blunt the tool becomes.  I'd like to add additional features that would allow detection of things like meaningful names and indexed download multiples, but I'm stuck on how to do it.
 
 #### scheck
 __scheck__ does the same as __smatch__ only with a single file.  It records the last _database_ it used successfully and will keep using that until another _database_ that passes the verification check is specified.  It will print multiple results if it finds them, showing the ___dataset___ for each.
