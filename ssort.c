@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "SMLib.h"
+#include <time.h>
 
 int main (int argc, char *argv [])
 
@@ -27,6 +28,7 @@ int database_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
 int outer_loop = 0, inner_loop;		// counters for sort loops
+int chr_idx = 0;
 
 char switch_chr;			// args section
 char database_filename [FILEPATH_LENGTH] = "";
@@ -36,10 +38,14 @@ char output_line [FILEPATH_LENGTH] = "";		// output line
 char swap_made = TRUE;
 char database_type;
 char first_line = SW_ON;
+char print_result = FALSE;
+
+time_t start_time;
 
 struct sha_database *database_db, swap_db;
 
 // Arguments section
+//printf ("Here 1\n");
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 	{
 	if ((int) argv [arg_no] [0] == '-')
@@ -50,7 +56,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch (switch_chr)
 				{
 				default:
-					exit_error ("# SHA Sort <database file>","");
+					print_result = TRUE;
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv
@@ -107,19 +113,38 @@ do
 fclose (DATABASE_FP);
 
 // Sort section
+start_time = time (NULL);
 outer_loop = 1;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
+//printf ("%d,",outer_loop);
 	for (inner_loop = 0; inner_loop < database_line - 2; inner_loop ++)
 		{
-		if (strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
+		while (database_db [inner_loop].sha [chr_idx] == database_db [inner_loop + 1].sha [chr_idx] && chr_idx < 48)
+			{
+			chr_idx ++;
+			}
+//		if (chr_idx > 4) printf ("c");
+//		if (chr_idx > 3)
+		if (database_db [inner_loop].sha [chr_idx] > database_db [inner_loop + 1].sha [chr_idx])
 			{
 			swap_db = database_db [inner_loop + 1];
 			database_db [inner_loop + 1] = database_db [inner_loop];
 			database_db [inner_loop] = swap_db;
 			swap_made = TRUE;
+//printf ("s");
 			}
+//		if (strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
+		if (!swap_made && strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
+			{
+			swap_db = database_db [inner_loop + 1];
+			database_db [inner_loop + 1] = database_db [inner_loop];
+			database_db [inner_loop] = swap_db;
+			swap_made = TRUE;
+//printf ("p");
+			}
+		chr_idx = 0;
 		}
 	if (outer_loop == 2 && swap_made)
 		{
@@ -133,15 +158,17 @@ while (swap_made == TRUE)
 		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 		}
 	outer_loop ++;
-if ((float) outer_loop / 10000) printf (".");
+//if ((float) outer_loop / 10000) printf (".");
 //printf ("%f\t",(float)outer_loop / 1000);
 	}
-printf ("");
-for (line_index = 0; line_index < database_line; line_index ++)	// print output
+printf ("%d seconds.\n", time (NULL) - start_time);
+if (print_result)
 	{
-	printf("%s\t%s\t%s\n", database_db [line_index].sha, database_db [line_index].filepath, database_db [line_index].dataset);
+	for (line_index = 0; line_index < database_line; line_index ++)	// print output
+		{
+		printf("%s\t%s\t%s\n", database_db [line_index].sha, database_db [line_index].filepath, database_db [line_index].dataset);
+		}
 	}
-
 free (database_db);		// free memory
 database_db = NULL;
 }
