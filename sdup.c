@@ -50,17 +50,12 @@ int database_alloc_size = DATABASE_INITIAL_SIZE;
 char switch_chr;		// args section
 char database_filename [FILEPATH_LENGTH] = "";
 char database_type;
-char database_first_line = SW_ON;
 char fileline [FILELINE_LENGTH];			// input line
-char sha_line [FILELINE_LENGTH];			// sha input line
-char match_found = FALSE;				// if match is found
 char dataset_out = TRUE;
 char output_choice = ALL_DUPES;
 char mark_first = WITH_COLOUR;
 char zero_sha = FALSE;
 char current_zero_sha = FALSE;
-struct sha_database database_db [1] = {0};		// fields for database
-struct sha_database previous_line [1] = {0};		// fields for search file
 struct sdup_database *sdup_db;				// sha database for duplicates
 
 // Arguments section

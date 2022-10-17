@@ -104,9 +104,6 @@ int file_type_count = 0;
 int filter_ferr;
 int arg_no, switch_pos;
 int outer_loop, inner_loop;
-int progress_count = 0;
-int progress_interval;
-int progress_percent = 0;
 int filter_curr_size = 0;
 int find_list_curr_size = 0;
 

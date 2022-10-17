@@ -1,7 +1,7 @@
 # Makefile for sha-match
 
 CC= gcc
-CFLAGS= -I.
+CFLAGS= -I. -Wunused-variable
 
 all: smatch sfind sconvert scheck sdup
 

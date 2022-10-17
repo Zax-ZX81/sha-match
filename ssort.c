@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Sort 0.01          *
+ *        SHA-Sort 0.02          *
  *                               *
  *        2020-12-01             *
  *                               *
@@ -14,37 +14,42 @@
 #include "SMLib.h"
 #include <time.h>
 
+struct ssort_database
+	{
+	char sha [SHA_LENGTH + 1];
+	char filepath [FILEPATH_LENGTH];
+	char dataset [DATASET_LENGTH];
+	int index;
+	};
+
 int main (int argc, char *argv [])
 
 {
-const char hex_string [16] = "0123456789abcdef";
 
 FILE *DATABASE_FP;
 
 int arg_no, switch_pos;		// args section
-int search_index;			// search list line counter
 int database_line = 0;	// number of lines in search list
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
 int outer_loop = 0, inner_loop;		// counters for sort loops
-int chr_idx = 0;
+int first_swap = 0;
+int swap_index;
 
 char switch_chr;			// args section
 char database_filename [FILEPATH_LENGTH] = "";
 char fileline [FILELINE_LENGTH];				// input line
-char database_sha_prev [SHA_LENGTH + 1];		// SHA256SUM of previous database line
-char output_line [FILEPATH_LENGTH] = "";		// output line
 char swap_made = TRUE;
 char database_type;
-char first_line = SW_ON;
 char print_result = FALSE;
 
 time_t start_time;
 
-struct sha_database *database_db, swap_db;
+struct ssort_database *ssort_db;
 
 // Arguments section
+
 //printf ("Here 1\n");
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 	{
@@ -76,7 +81,7 @@ if (DATABASE_FP == NULL)
 	}
 
 // Database load section
-database_db = (struct sha_database *) malloc (sizeof (struct sha_database) * database_alloc_size);
+ssort_db = (struct ssort_database *) malloc (sizeof (struct ssort_database) * database_alloc_size);
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
@@ -92,21 +97,22 @@ do
 		{
 		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 			{
-			strncpy (database_db [database_line].sha, fileline, SHA_LENGTH);
-			database_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (database_db [database_line].filepath, fileline + SHA_LENGTH + 2);
-			database_db [database_line].filepath[strlen (database_db [database_line].filepath) - 1] = NULL_TERM;
-			strcpy (database_db [database_line].dataset, "");	// added just in case
+			strncpy (ssort_db [database_line].sha, fileline, SHA_LENGTH);
+			ssort_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (ssort_db [database_line].filepath, fileline + SHA_LENGTH + 2);
+			ssort_db [database_line].filepath[strlen (ssort_db [database_line].filepath) - 1] = NULL_TERM;
+			strcpy (ssort_db [database_line].dataset, "");
 			}
 			else		// load SHA256DB data
 			{
-			separate_fields (database_db [database_line].sha, database_db [database_line].filepath, database_db [database_line].dataset, fileline);
+			separate_fields (ssort_db [database_line].sha, ssort_db [database_line].filepath, ssort_db [database_line].dataset, fileline);
 			}
+		ssort_db [database_line].index = database_line;	// load sort index in start position
 		}
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
-		database_db = (struct sha_database *) realloc (database_db, sizeof (struct sha_database) * database_alloc_size);
+		ssort_db = (struct ssort_database *) realloc (ssort_db, sizeof (struct ssort_database) * database_alloc_size);
 		}
 	database_line ++;
 	} while (!feof (DATABASE_FP));
@@ -118,57 +124,34 @@ outer_loop = 1;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-//printf ("%d,",outer_loop);
-	for (inner_loop = 0; inner_loop < database_line - 2; inner_loop ++)
+	for (inner_loop = first_swap; inner_loop < database_line - 1; inner_loop ++)
 		{
-		while (database_db [inner_loop].sha [chr_idx] == database_db [inner_loop + 1].sha [chr_idx] && chr_idx < 48)
+//		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
+		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
 			{
-			chr_idx ++;
-			}
-//		if (chr_idx > 4) printf ("c");
-//		if (chr_idx > 3)
-		if (database_db [inner_loop].sha [chr_idx] > database_db [inner_loop + 1].sha [chr_idx])
-			{
-			swap_db = database_db [inner_loop + 1];
-			database_db [inner_loop + 1] = database_db [inner_loop];
-			database_db [inner_loop] = swap_db;
+			swap_index = ssort_db [inner_loop + 1].index;
+			ssort_db [inner_loop + 1].index = ssort_db [inner_loop].index;
+			ssort_db [inner_loop].index = swap_index;
 			swap_made = TRUE;
-//printf ("s");
 			}
-//		if (strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
-		if (!swap_made && strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
-			{
-			swap_db = database_db [inner_loop + 1];
-			database_db [inner_loop + 1] = database_db [inner_loop];
-			database_db [inner_loop] = swap_db;
-			swap_made = TRUE;
-//printf ("p");
-			}
-		chr_idx = 0;
 		}
 	if (outer_loop == 2 && swap_made)
 		{
-//		if (database_line > SORT_MAX_LINES)           // abandon sort if file too big
-//			{
-//			fclose (DATABASE_FP);
-//			free (database_db);           // free memory
-//			database_db = NULL;
-//			exit_error ("Not sorting, file has too many lines: ", database_filename);
-//			}
 		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 		}
 	outer_loop ++;
-//if ((float) outer_loop / 10000) printf (".");
-//printf ("%f\t",(float)outer_loop / 1000);
 	}
 printf ("%d seconds.\n", time (NULL) - start_time);
 if (print_result)
 	{
 	for (line_index = 0; line_index < database_line; line_index ++)	// print output
 		{
-		printf("%s\t%s\t%s\n", database_db [line_index].sha, database_db [line_index].filepath, database_db [line_index].dataset);
+		printf("%s\t%s\t%s\n", \
+					ssort_db [ssort_db [line_index].index].sha, \
+					ssort_db [ssort_db [line_index].index].filepath, \
+					ssort_db [ssort_db [line_index].index].dataset);
 		}
 	}
-free (database_db);		// free memory
-database_db = NULL;
+free (ssort_db);		// free memory
+ssort_db = NULL;
 }
