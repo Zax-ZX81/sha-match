@@ -627,6 +627,12 @@ if (sfflags->std_out == SW_OFF)
 // Clean-up section
 chdir (C_W_D);
 
+free (database_db);	// free memory
+database_db = NULL;
+free (find_list);
+find_list = NULL;
+free (filter_list);
+filter_list = NULL;
 }
 
 

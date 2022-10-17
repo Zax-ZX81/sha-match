@@ -259,5 +259,6 @@ for (database_line = 0; database_line <= last_line; database_line++)
 		}	// end zero test
 	} // end for loop
 
+free (sdup_db);	// free memory
+sdup_db = NULL;
 }
-

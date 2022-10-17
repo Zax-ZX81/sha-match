@@ -16,8 +16,12 @@ sconvert: sconvert.c SMLib.c
 
 scheck: scheck.c SMLib.c
 	$(CC) -o bin/scheck scheck.c SMLib.c $(CFLAGS)
+
 sdup: sdup.c SMLib.c
 	$(CC) -o bin/sdup sdup.c SMLib.c $(CFLAGS)
 
+ssort: ssort.c SMLib.c
+	$(CC) -o bin/ssort ssort.c SMLib.c $(CFLAGS)
+
 install:
-	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup sha-match.1 ~/bin/
+	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup bin/ssort sha-match.1 ~/bin/
