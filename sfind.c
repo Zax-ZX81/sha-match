@@ -126,7 +126,6 @@ char C_W_D [FILEPATH_LENGTH];				// base directory of search
 char swap_made = TRUE;					// swap was made on last sort pass
 char filter_match = FALSE;
 char filter_check;
-char output_current;
 
 // Argument section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -386,11 +385,11 @@ if (sfflags->filtering > 0 && sfflags->std_out == SW_OFF)
 database_db = (struct sfind_database *) malloc (sizeof (struct sfind_database) * database_alloc_size);		// allocate memory for database
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
-	output_current = TRUE;					// set so that if not filtering all results are output
+	find_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
 	filter_match = FALSE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
 		{
-		output_current = FALSE;
+		find_list [find_list_read].filtered = FALSE;
 		for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
 			{
 			if (strcmp (filter_list [filter_index].filepath, find_list [find_list_read].filepath) == 0 && \
@@ -410,14 +409,14 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 			}
 		if (sfflags->filtering == F_INCL && filter_match)		// output if match with inclusive filter
 			{
-			output_current = TRUE;
+			find_list [find_list_read].filtered = TRUE;
 			}
 		if (sfflags->filtering == F_EXCL && !filter_match)		// output if no match with exclusive filter
 			{
-			output_current = TRUE;
+			find_list [find_list_read].filtered = TRUE;
 			}
 		}
-	if (output_current)		// output matching line
+	if (find_list [find_list_read].filtered)		// output matching line
 		{
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
@@ -628,7 +627,7 @@ free (database_db);	// free memory
 database_db = NULL;
 free (find_list);
 find_list = NULL;
-free (filter_list);
+//free (filter_list);
 filter_list = NULL;
 }
 
