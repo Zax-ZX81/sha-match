@@ -18,7 +18,7 @@
 #include "SMLib.h"
 
 #define PROG_VERSION "0.492"
-#define FILTER_PROG_NAME "SFind"
+#define FILTER_PROG_NAME "ZFind"
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
 #define FILTER_BK ".sf_filter"
@@ -75,6 +75,14 @@ struct filter_entry
 	char filepath [FILEPATH_LENGTH];
 	};
 
+struct ssort_database
+	{
+	char sha [SHA_LENGTH + 1];
+	char filepath [FILEPATH_LENGTH];
+	char dataset [DATASET_LENGTH];
+	int index;
+	};
+
 char filter_line_check (char *filter_line);
 
 int main (int argc, char *argv [])
@@ -87,10 +95,9 @@ struct stat file_stat;
 struct find_list_entry *find_list;
 struct file_sort_list_entry *fs_list;
 struct filter_entry *filter_list;
-sfflags->database_type = S2DB_TYPE;		// default file type S2DB
-sfflags->sort = SORT_SHA;			// sort by SHA256SUM by default
+struct ssort_database *ssort_db;
+
 sfflags->filtering = FALSE;
-sfflags->progress = SW_ON;			// show progress by default
 
 FILE *FILTER_FP;				// inclusion and exclusion filter list
 FILE *FILOUT_FP;
@@ -107,11 +114,14 @@ int arg_no, switch_pos;
 int filter_curr_size = 0;
 int find_list_curr_size = 0;
 int fs_list_curr_size = 0;
+int fs_list_index = 0;
 int outer_loop = 0, inner_loop;
 int swap_index;
+int database_alloc_size = DATABASE_INITIAL_SIZE;
+int database_ferr;			// database file error
+int database_line = 0;	// number of lines in search list
 
-char database_dataset [DATASET_LENGTH] = "";		// holds dataset name
-char database_filename [FILEPATH_LENGTH] = "";		// output file name with extension
+char database_in_filename [FILEPATH_LENGTH] = "";		// output file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
 char switch_chr;
 char database_extension [8] = "";			// holds database extension based on flag
@@ -121,6 +131,8 @@ char C_W_D [FILEPATH_LENGTH];				// base directory of search
 char filter_check;
 char filter_match = FALSE;
 char swap_made = TRUE;
+char database_type;
+char outype = 's';
 
 // Argument section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -133,7 +145,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch (switch_chr)
 				{
 				case 'f':
-					sfflags->sort = SORT_FILE;
+					outype = 'f';
 					break;
 				case 'i':
 					sfflags->filtering = F_INCL;
@@ -167,30 +179,13 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 		}	// END for arg_no
 		else
 		{
-		strncpy (database_dataset, argv [arg_no], DATASET_LENGTH);
+		strncpy (database_in_filename, argv [arg_no], DATASET_LENGTH);
 		} 	// END else if int argv
 	}
 
 //printf ("Here 1\n");
 
-if (argc < 2 || !strlen (database_dataset))		// no file argument, so stdout only
-	{
-	sfflags->std_out = TRUE;
-	}
-if (sfflags->verbose)
-	{
-	sfflags->progress = SW_OFF;			// progress indicator will interfere with verbose output
-	}
-
 // Output open section
-if (sfflags->database_type == S2DB_TYPE)
-	{
-	strcpy (database_extension, S2DB_EXTENSION);
-	}
-	else
-	{
-	strcpy (database_extension, SHA256_EXTENSION);
-	}
 if (sfflags->filtering > 0)
 	{
 	FILTER_FP = fopen (FILTER_FILE, "r");
@@ -198,6 +193,12 @@ if (sfflags->filtering > 0)
 		{
 		exit_error ("Can't find filter file: ", FILTER_FILE);
 		}
+	}
+
+DATABASE_FP = fopen (database_in_filename, "r");
+if (DATABASE_FP == NULL)
+	{
+	exit_error ("Can't find Database: ", database_in_filename);
 	}
 
 if (sfflags->filtering > 0)
@@ -266,12 +267,6 @@ if (sfflags->filtering > 0)
 	}
 
 // Initial search section
-if (sfflags->std_out == SW_OFF)
-	{
-	printf ("# Building file list...");
-	}
-strcpy (database_filename, database_dataset);		// compose output filename
-strcat (database_filename, database_extension);
 find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * DATABASE_INITIAL_SIZE);
 find_list_curr_size = DATABASE_INITIAL_SIZE;
 getcwd (C_W_D, FILEPATH_LENGTH);		// get present working directory
@@ -293,8 +288,7 @@ if (DIR_PATH != NULL)
 				find_list [find_list_write].object_type = T_REJ;
 				break;
 			}								// VVV filter out ".", ".." and temp file from search
-		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
-			&& strcmp (dir_ents->d_name, database_filename)))
+		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 			{
 			find_list [find_list_write].object_type = T_REJ;
 			}
@@ -370,14 +364,6 @@ while (find_list_read < find_list_write)
 		}
 	find_list_read ++;
 	}
-if (sfflags->std_out == SW_OFF)
-	{
-	printf ("%d items found.\n", find_list_write);
-	}
-if (sfflags->filtering > 0 && sfflags->std_out == SW_OFF)
-	{
-	printf ("# Applying filter...");
-	}
 
 // Filter
 fs_list = (struct file_sort_list_entry *) malloc (sizeof (struct file_sort_list_entry) * DATABASE_INITIAL_SIZE);
@@ -420,15 +406,16 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		{
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
-//LOAD FS_LIST with filepath and index
-			printf ("%s\t%c\n", find_list [find_list_read].filepath, find_list [find_list_read].object_type);
+			strcpy (fs_list [fs_list_index].filepath, find_list [find_list_read].filepath);
+			fs_list [fs_list_index].index = fs_list_index ++;
+/*			printf ("%s\t%c\n", find_list [find_list_read].filepath, find_list [find_list_read].object_type);
 			printf ("%c\t%d\t%s\t%d\n", find_list [find_list_read].object_type, \
 						find_list [find_list_read].filtered, \
 						find_list [find_list_read].filepath, \
-						find_list [find_list_read].filesize);
+						find_list [find_list_read].filesize);*/
 			}
 		}
-	if (OUTPUTINDEX + 1 == fs_list_curr_size)		// allocated more memory if needed
+	if (fs_list_index + 1 == fs_list_curr_size)		// allocated more memory if needed
 		{
 		fs_list_curr_size += DATABASE_INCREMENT;
 		fs_list = (struct file_sort_list_entry *) realloc (find_list, sizeof (struct file_sort_list_entry) * fs_list_curr_size);
@@ -436,25 +423,90 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	}
 
 // Sort
-while (swap_made == TRUE)
+/*while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (inner_loop = 0; inner_loop < find_list_write - 1; inner_loop ++)
+	for (inner_loop = 0; inner_loop < fs_list_index - 1; inner_loop ++)
 		{
-		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort>
+		if (strcmp (fs_list [fs_list [inner_loop].index].filepath, fs_list [fs_list [inner_loop + 1].index].filepath) > 0)
+			{	// if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
+			swap_index = fs_list [inner_loop + 1].index;
+			fs_list [inner_loop + 1].index = fs_list [inner_loop].index;
+			fs_list [inner_loop].index = swap_index;
+			swap_made = TRUE;
+			}
+		}
+	}*/
+if (outype == 'f')
+	{
+	for (line_index = 0; line_index < fs_list_index; line_index ++) // print output
+		{
+		printf("%s\n", fs_list [fs_list [line_index].index].filepath);
+		}
+	}
+// Database load section
+ssort_db = (struct ssort_database *) malloc (sizeof (struct ssort_database) * database_alloc_size);
+do
+	{
+	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
+	if (database_line == 0)
+		{
+		database_type = sha_verify (fileline);
+		if (database_type == UNKNOWN_TYPE)
 			{
-			swap_index = find_list [inner_loop + 1].index;
-			find_list [inner_loop + 1].index = find_list [inner_loop].index;
-			find_list [inner_loop].index = swap_index;
+			exit_error ("Unrecognised file type: ", database_in_filename);
+			}
+		}
+	if (fileline != NULL && database_ferr)
+		{
+		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
+			{
+			strncpy (ssort_db [database_line].sha, fileline, SHA_LENGTH);
+			ssort_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (ssort_db [database_line].filepath, fileline + SHA_LENGTH + 2);
+			ssort_db [database_line].filepath[strlen (ssort_db [database_line].filepath) - 1] = NULL_TERM;
+			strcpy (ssort_db [database_line].dataset, "");
+			}
+			else		// load SHA256DB data
+			{
+			separate_fields (ssort_db [database_line].sha, ssort_db [database_line].filepath, ssort_db [database_line].dataset, fileline);
+			}
+		ssort_db [database_line].index = database_line;	// load sort index in start position
+		}
+	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
+		{
+		database_alloc_size += DATABASE_INCREMENT;
+		ssort_db = (struct ssort_database *) realloc (ssort_db, sizeof (struct ssort_database) * database_alloc_size);
+		}
+	database_line ++;
+	} while (!feof (DATABASE_FP));
+fclose (DATABASE_FP);
+
+// Sort section
+swap_made = TRUE;
+while (swap_made == TRUE)
+	{
+//printf (".");
+	swap_made = FALSE;
+	for (inner_loop = 0; inner_loop < database_line - 1; inner_loop ++)
+		{
+//		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
+		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
+			{
+			swap_index = ssort_db [inner_loop + 1].index;
+			ssort_db [inner_loop + 1].index = ssort_db [inner_loop].index;
+			ssort_db [inner_loop].index = swap_index;
 			swap_made = TRUE;
 			}
 		}
 	}
-for (line_index = 0; line_index < database_line; line_index ++) // print output
+if (outype == 's')
 	{
-	printf("%s\t%s\t%s\n", ssort_db [ssort_db [line_index].index].sha);
-}
-
+	for (line_index = 0; line_index < database_line; line_index ++)	// print output
+		{
+		printf("%s\n", ssort_db [ssort_db [line_index].index].filepath);
+		}
+	}
 // Clean-up section
 chdir (C_W_D);
 
@@ -503,32 +555,31 @@ if (first_char < 97 && first_char > 90)
 return (1);
 }
 
+//----------------------------
 
-/*------------------------------------
+
+
+/* * * * * * * * * * * * * * * * *
+ *                               *
+ *        SHA-Sort 0.02          *
+ *                               *
+ *        2020-12-01             *
+ *                               *
+ *        Zax                    *
+ *                               *
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "SMLib.h"
+#include <time.h>
 
-#define PROG_VERSION "0.22"
-#define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-#define ALL_DUPES 'A'
-#define ONLY_FIRST 'F'
-#define NOT_FIRST 'f'
-#define ONLY_LAST 'L'
-#define NOT_LAST 'l'
-#define ALL_UNIQUE 'u'
-#define WITH_COLOUR 'C'
-#define WITH_HASH 'H'
-#define NO_MARK 'N'
-#define NULL_STRING ""
-
-struct sdup_database
+struct ssort_database
 	{
 	char sha [SHA_LENGTH + 1];
 	char filepath [FILEPATH_LENGTH];
 	char dataset [DATASET_LENGTH];
-	int dup_num;
+	int index;
 	};
 
 int main (int argc, char *argv [])
@@ -538,24 +589,27 @@ int main (int argc, char *argv [])
 FILE *DATABASE_FP;
 
 int arg_no, switch_pos;		// args section
-int database_ferr;		// database file error
-int database_line = 0;
-int last_line;
-int dup_count = 0;
+int database_line = 0;	// number of lines in search list
 int database_alloc_size = DATABASE_INITIAL_SIZE;
+int line_index = 0;
+int database_ferr;			// database file error
+int outer_loop = 0, inner_loop;		// counters for sort loops
+int swap_index;
 
-char switch_chr;		// args section
+char switch_chr;			// args section
 char database_filename [FILEPATH_LENGTH] = "";
+char fileline [FILELINE_LENGTH];				// input line
+char swap_made = TRUE;
 char database_type;
-char fileline [FILELINE_LENGTH];			// input line
-char dataset_out = TRUE;
-char output_choice = ALL_DUPES;
-char mark_first = WITH_COLOUR;
-char zero_sha = FALSE;
-char current_zero_sha = FALSE;
-struct sdup_database *sdup_db;				// sha database for duplicates
+char print_result = FALSE;
+
+time_t start_time;
+
+struct ssort_database *ssort_db;
 
 // Arguments section
+
+//printf ("Here 1\n");
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 	{
 	if ((int) argv [arg_no] [0] == '-')
@@ -565,59 +619,28 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch_chr = (int) argv [arg_no] [switch_pos];
 			switch (switch_chr)
 				{
-				case 'd':
-					dataset_out = FALSE;
-					break;
-				case NOT_FIRST:
-					output_choice = NOT_FIRST;
-					mark_first = NO_MARK;
-					break;
-				case ONLY_FIRST:
-					output_choice = ONLY_FIRST;
-					mark_first = NO_MARK;
-					break;
-				case ONLY_LAST:
-					output_choice = ONLY_LAST;
-					mark_first = NO_MARK;
-					break;
-				case NOT_LAST:
-					output_choice = NOT_LAST;
-					mark_first = NO_MARK;
-					break;
-				case 'm':
-					mark_first = WITH_HASH;
-					break;
-				case 'u':
-					output_choice = ALL_UNIQUE;
-					zero_sha = TRUE;
-					mark_first = NO_MARK;
-					break;
-				case 'V':
-					printf ("SHA Dup version %s\n", PROG_VERSION);
-					exit (0);
-				case 'z':
-					zero_sha = TRUE;
-					break;
 				default:
-					exit_error ("# SHA Dup [dfFlLmuVz] <database file>","");
+					print_result = TRUE;
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv
 		else
 		{
-		strncpy (database_filename, argv [arg_no], FILEPATH_LENGTH);
+		if (strcmp (database_filename, "") == 0)
+			{
+			strncpy (database_filename, argv [arg_no], FILEPATH_LENGTH);
+			}
 		}	// END else if int argv
 	}	// END for arg_no
 
-// File open section
-DATABASE_FP = fopen (database_filename, "r");
+DATABASE_FP = fopen (database_filename,"r");
 if (DATABASE_FP == NULL)
 	{
 	exit_error ("Can't find Database: ", database_filename);
 	}
 
 // Database load section
-sdup_db = (struct sdup_database *) malloc (sizeof (struct sdup_database) * database_alloc_size);
+ssort_db = (struct ssort_database *) malloc (sizeof (struct ssort_database) * database_alloc_size);
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
@@ -626,7 +649,6 @@ do
 		database_type = sha_verify (fileline);
 		if (database_type == UNKNOWN_TYPE)
 			{
-			fclose (DATABASE_FP);
 			exit_error ("Unrecognised file type: ", database_filename);
 			}
 		}
@@ -634,124 +656,62 @@ do
 		{
 		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 			{
-			strncpy (sdup_db [database_line].sha, fileline, SHA_LENGTH);
-			sdup_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (sdup_db [database_line].filepath, fileline + SHA_LENGTH + 2);
-			sdup_db [database_line].filepath[strlen (sdup_db [database_line].filepath) - 1] = NULL_TERM;
-			strcpy (sdup_db [database_line].dataset, database_filename);	// enter database filename as dataset
+			strncpy (ssort_db [database_line].sha, fileline, SHA_LENGTH);
+			ssort_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (ssort_db [database_line].filepath, fileline + SHA_LENGTH + 2);
+			ssort_db [database_line].filepath[strlen (ssort_db [database_line].filepath) - 1] = NULL_TERM;
+			strcpy (ssort_db [database_line].dataset, "");
 			}
 			else		// load SHA256DB data
 			{
-			separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
+			separate_fields (ssort_db [database_line].sha, ssort_db [database_line].filepath, ssort_db [database_line].dataset, fileline);
 			}
+		ssort_db [database_line].index = database_line;	// load sort index in start position
 		}
-		if (database_line > 0 && !strcmp (sdup_db [database_line - 1].sha, sdup_db [database_line].sha))	// not first line and SHA256SUMs match
-			{
-			if (dup_count == 0)
-				{
-				sdup_db [database_line - 1].dup_num = 1;
-				sdup_db [database_line].dup_num = 2;
-				dup_count = 2;
-				}
-				else
-				{
-				sdup_db [database_line].dup_num = ++dup_count;
-				}
-			}
-			else
-			{
-			dup_count = 0;
-			}
-
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
-		sdup_db = (struct sdup_database *) realloc (sdup_db, sizeof (struct sdup_database) * database_alloc_size);
+		ssort_db = (struct ssort_database *) realloc (ssort_db, sizeof (struct ssort_database) * database_alloc_size);
 		}
 	database_line ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
 
-last_line = database_line;
-for (database_line = 0; database_line <= last_line; database_line++)
+// Sort section
+start_time = time (NULL);
+outer_loop = 1;
+while (swap_made == TRUE)
 	{
-	current_zero_sha = strcmp (sdup_db [database_line].sha, SHA_ZERO);
-	if (!(!zero_sha && !current_zero_sha))
-		{	// zero test
-		if (sdup_db [database_line].dup_num)	// Dup number not 0
+	swap_made = FALSE;
+	for (inner_loop = 0; inner_loop < database_line - 1; inner_loop ++)
+		{
+//		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
+		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
 			{
-			if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_DUPES || output_choice == ONLY_FIRST || output_choice == NOT_LAST))	// first duplicate
-				{
-				switch (mark_first)
-					{
-					case WITH_COLOUR:
-						printf ("%s%s%s", TEXT_YELLOW, sdup_db [database_line].filepath, TEXT_RESET);
-						break;
-					case WITH_HASH:
-						printf ("#%s", sdup_db [database_line].filepath);
-						break;
-					default:
-						printf ("%s", sdup_db [database_line].filepath);
-					}	// end switch
-				if (dataset_out)
-					{
-					printf ("\t%s", sdup_db [database_line].dataset);
-					}
-				printf ("\n");
-				}	// if dup = 1
-			if (sdup_db [database_line].dup_num > 1 && (output_choice == ALL_DUPES || output_choice == NOT_FIRST\
-					 || output_choice == NOT_LAST || output_choice == ONLY_LAST))	// other duplicates
-				{
-				switch (output_choice)
-					{
-					case NOT_LAST:
-						if (sdup_db [database_line + 1].dup_num)
-							{
-							printf ("%s", sdup_db [database_line].filepath);
-							if (dataset_out)
-								{
-								printf ("\t%s", sdup_db [database_line].dataset);
-								}
-							printf ("\n");
-							}
-						break;
-					case ONLY_LAST:
-						if (!sdup_db [database_line + 1].dup_num)
-							{
-							printf ("%s", sdup_db [database_line].filepath);
-							if (dataset_out)
-								{
-								printf ("\t%s", sdup_db [database_line].dataset);
-								}
-						printf ("\n");
-							}
-						break;
-					default:
-						printf ("%s", sdup_db [database_line].filepath);
-						if (dataset_out)
-							{
-							printf ("\t%s", sdup_db [database_line].dataset);
-							}
-						printf ("\n");
-					}	// end switch
-//				printf ("%s\n", sdup_db [database_line].filepath);
-				}
-			if ((sdup_db [database_line].dup_num == 1 && output_choice == ALL_UNIQUE) || !current_zero_sha)	// output first duplicate if all unique
-				{
-				printf ("%s\t%s\t%s\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset);
-				}
-			}	// end dup found
-			else
-			{	// no dup found
-			if (output_choice == ALL_UNIQUE)
-				{
-				printf ("%s\t%s\t%s\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset);
-				}
-			}	// end no dup
-		}	// end zero test
-	} // end for loop
-
-free (sdup_db);	// free memory
-sdup_db = NULL;
+			swap_index = ssort_db [inner_loop + 1].index;
+			ssort_db [inner_loop + 1].index = ssort_db [inner_loop].index;
+			ssort_db [inner_loop].index = swap_index;
+			swap_made = TRUE;
+			}
+		}
+	if (outer_loop == 2 && swap_made)
+		{
+		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
+		}
+	outer_loop ++;
+	}
+printf ("%d seconds.\n", time (NULL) - start_time);
+if (print_result)
+	{
+	for (line_index = 0; line_index < database_line; line_index ++)	// print output
+		{
+		printf("%s\t%s\t%s\n", \
+					ssort_db [ssort_db [line_index].index].sha, \
+					ssort_db [ssort_db [line_index].index].filepath, \
+					ssort_db [ssort_db [line_index].index].dataset);
+		}
+	}
+free (ssort_db);		// free memory
+ssort_db = NULL;
 }
 */
