@@ -87,7 +87,6 @@ sfflags->sort = SORT_SHA;			// sort by SHA256SUM by default
 sfflags->filtering = FALSE;
 sfflags->progress = SW_ON;			// show progress by default
 
-FILE *SHA_PIPE;
 FILE *FILTER_FP;				// inclusion and exclusion filter list
 FILE *FILOUT_FP;
 FILE *DATABASE_FP;
@@ -98,33 +97,19 @@ int filter_line_count = 0;
 int filter_index = 0;
 int find_list_write = 0;			// number of file items found in search
 int find_list_read = 0;
-int database_index = 0;
-int database_alloc_size = DATABASE_INITIAL_SIZE;
-int file_type_count = 0;
 int filter_ferr;
 int arg_no, switch_pos;
-int outer_loop, inner_loop;
 int filter_curr_size = 0;
 int find_list_curr_size = 0;
-
-long file_size_total = 0;
-long file_size_accum = 0;
-
-double file_size_mult = 0;
-double file_progress = 0;
 
 char database_dataset [DATASET_LENGTH] = "";		// holds dataset name
 char database_filename [FILEPATH_LENGTH] = "";		// output file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
-char sha_line [FILELINE_LENGTH] = "";			// hold line from SHA256SUM output
 char switch_chr;
 char database_extension [8] = "";			// holds database extension based on flag
-char sha_command [FILEPATH_LENGTH] = "";		// SHA256SUM command line with file argument
 char path_sub [FILEPATH_LENGTH];			// holds SHA256SUM file argument
 char dir_filter_test [FILEPATH_LENGTH] = "";		// holds composed directory for filter
 char C_W_D [FILEPATH_LENGTH];				// base directory of search
-char swap_made = TRUE;					// swap was made on last sort pass
-char filter_match = FALSE;
 char filter_check;
 
 // Argument section
@@ -175,6 +160,9 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 		strncpy (database_dataset, argv [arg_no], DATASET_LENGTH);
 		} 	// END else if int argv
 	}
+
+//printf ("Here 1\n");
+
 if (argc < 2 || !strlen (database_dataset))		// no file argument, so stdout only
 	{
 	sfflags->std_out = TRUE;
@@ -201,7 +189,7 @@ if (sfflags->filtering > 0)
 		exit_error ("Can't find filter file: ", FILTER_FILE);
 		}
 	}
-//printf ("# Filter\n");
+
 if (sfflags->filtering > 0)
 	{
 	filter_list = (struct filter_entry *) malloc (sizeof (struct filter_entry) * FILTER_INITIAL_SIZE);
@@ -384,6 +372,7 @@ if (sfflags->filtering > 0 && sfflags->std_out == SW_OFF)
 // Output
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
+//printf (".");
 	find_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
 	filter_match = FALSE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
@@ -419,11 +408,11 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		{
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
-			printf ("%s\t%s\t%s\t%d, find_list [find_list_read].object_type, \
+//			printf ("%s\t%c\n", find_list [find_list_read].filepath, find_list [find_list_read].object_type);
+			printf ("%c\t%d\t%s\t%d\n", find_list [find_list_read].object_type, \
 						find_list [find_list_read].filtered, \
 						find_list [find_list_read].filepath, \
 						find_list [find_list_read].filesize);
-			database_index ++;
 			}
 		}
 	}
@@ -431,12 +420,12 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 // Clean-up section
 chdir (C_W_D);
 
-free (database_db);	// free memory
-database_db = NULL;
-free (find_list);
-find_list = NULL;
+//free (database_db);	// free memory
+//database_db = NULL;
+//free (find_list);
+//find_list = NULL;
 //free (filter_list);
-filter_list = NULL;
+//filter_list = NULL;
 }
 
 
