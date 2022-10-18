@@ -34,7 +34,6 @@ int database_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
 int outer_loop = 0, inner_loop;		// counters for sort loops
-int first_swap = 0;
 int swap_index;
 
 char switch_chr;			// args section
@@ -124,7 +123,7 @@ outer_loop = 1;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (inner_loop = first_swap; inner_loop < database_line - 1; inner_loop ++)
+	for (inner_loop = 0; inner_loop < database_line - 1; inner_loop ++)
 		{
 //		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
 		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
