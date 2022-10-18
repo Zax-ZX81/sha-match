@@ -288,7 +288,8 @@ if (DIR_PATH != NULL)
 				find_list [find_list_write].object_type = T_REJ;
 				break;
 			}								// VVV filter out ".", ".." and temp file from search
-		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
+		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV))\
+			&& strcmp (dir_ents->d_name, database_in_filename))
 			{
 			find_list [find_list_write].object_type = T_REJ;
 			}
@@ -423,7 +424,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	}
 
 // Sort
-/*while (swap_made == TRUE)
+while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
 	for (inner_loop = 0; inner_loop < fs_list_index - 1; inner_loop ++)
@@ -436,7 +437,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 			swap_made = TRUE;
 			}
 		}
-	}*/
+	}
 if (outype == 'f')
 	{
 	for (line_index = 0; line_index < fs_list_index; line_index ++) // print output
