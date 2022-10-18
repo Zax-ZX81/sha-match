@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Find 0.491            *
+ *     SHA-Find 0.492            *
  *                               *
  *     2021-07-06                *
  *                               *
@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.491"
+#define PROG_VERSION "0.492"
 #define FILTER_PROG_NAME "SFind"
 #define TWO_SPACES "  "
 #define FILTER_FILE "sf_filter"
