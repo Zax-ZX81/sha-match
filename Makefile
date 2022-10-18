@@ -23,5 +23,8 @@ sdup: sdup.c SMLib.c
 ssort: ssort.c SMLib.c
 	$(CC) -o bin/ssort ssort.c SMLib.c $(CFLAGS)
 
+zfind: zfind.c SMLib.c
+	$(CC) -o bin/zfind zfind.c SMLib.c $(CFLAGS)
+
 install:
 	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup bin/ssort sha-match.1 ~/bin/
