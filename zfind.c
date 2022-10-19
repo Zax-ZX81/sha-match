@@ -288,8 +288,7 @@ if (DIR_PATH != NULL)
 				find_list [find_list_write].object_type = T_REJ;
 				break;
 			}								// VVV filter out ".", ".." and temp file from search
-		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV))\
-			&& strcmp (dir_ents->d_name, database_in_filename))
+		if (!strcmp (dir_ents->d_name, DIR_CURRENT) || !strcmp (dir_ents->d_name, DIR_PREV) || !strcmp (dir_ents->d_name, database_in_filename))
 			{
 			find_list [find_list_write].object_type = T_REJ;
 			}
@@ -313,6 +312,7 @@ if (DIR_PATH != NULL)
 	}
 
 // Feedback search section
+//printf ("___Database %s___\n", database_in_filename);
 while (find_list_read < find_list_write)
 	{
 	chdir (C_W_D);				// go back to the starting directory
@@ -338,7 +338,7 @@ while (find_list_read < find_list_write)
 						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
 						break;
 					}							// VVV filter out "." and ".." from search
-				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
+				if (!strcmp (dir_ents->d_name, DIR_CURRENT) || !strcmp (dir_ents->d_name, DIR_PREV) || !strcmp (dir_ents->d_name, database_in_filename))
 					{
 					find_list [find_list_write].object_type = T_REJ;
 					}
@@ -408,12 +408,8 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
 			strcpy (fs_list [fs_list_index].filepath, find_list [find_list_read].filepath);
-			fs_list [fs_list_index].index = fs_list_index ++;
-/*			printf ("%s\t%c\n", find_list [find_list_read].filepath, find_list [find_list_read].object_type);
-			printf ("%c\t%d\t%s\t%d\n", find_list [find_list_read].object_type, \
-						find_list [find_list_read].filtered, \
-						find_list [find_list_read].filepath, \
-						find_list [find_list_read].filesize);*/
+			fs_list [fs_list_index].index = fs_list_index;
+			fs_list_index ++;
 			}
 		}
 	if (fs_list_index + 1 == fs_list_curr_size)		// allocated more memory if needed
@@ -430,7 +426,7 @@ while (swap_made == TRUE)
 	for (inner_loop = 0; inner_loop < fs_list_index - 1; inner_loop ++)
 		{
 		if (strcmp (fs_list [fs_list [inner_loop].index].filepath, fs_list [fs_list [inner_loop + 1].index].filepath) > 0)
-			{	// if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
+			{
 			swap_index = fs_list [inner_loop + 1].index;
 			fs_list [inner_loop + 1].index = fs_list [inner_loop].index;
 			fs_list [inner_loop].index = swap_index;
@@ -440,11 +436,12 @@ while (swap_made == TRUE)
 	}
 if (outype == 'f')
 	{
-	for (line_index = 0; line_index < fs_list_index; line_index ++) // print output
+	for (line_index = 0; line_index <= fs_list_index - 1; line_index ++) // print output
 		{
 		printf("%s\n", fs_list [fs_list [line_index].index].filepath);
 		}
 	}
+
 // Database load section
 ssort_db = (struct ssort_database *) malloc (sizeof (struct ssort_database) * database_alloc_size);
 do
@@ -482,16 +479,19 @@ do
 	database_line ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
+/*for (line_index = 0; line_index < database_line - 1; line_index ++)
+	{
+	printf("_-_%s\tli %d\tai %d\n", ssort_db [ssort_db [line_index].index].filepath, line_index, ssort_db [line_index].index);
+	}
+printf("_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx_\n");*/
 
 // Sort section
 swap_made = TRUE;
 while (swap_made == TRUE)
 	{
-//printf (".");
 	swap_made = FALSE;
-	for (inner_loop = 0; inner_loop < database_line - 1; inner_loop ++)
+	for (inner_loop = 0; inner_loop < database_line - 2; inner_loop ++)
 		{
-//		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
 		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
 			{
 			swap_index = ssort_db [inner_loop + 1].index;
@@ -503,7 +503,7 @@ while (swap_made == TRUE)
 	}
 if (outype == 's')
 	{
-	for (line_index = 0; line_index < database_line; line_index ++)	// print output
+	for (line_index = 0; line_index < database_line - 1; line_index ++)	// print output
 		{
 		printf("%s\n", ssort_db [ssort_db [line_index].index].filepath);
 		}
