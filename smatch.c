@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Match 0.33         *
+ *        SHA-Match 0.37         *
  *                               *
  *        2020-12-01             *
  *                               *
@@ -13,7 +13,7 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.33"
+#define PROG_VERSION "0.37"
 #define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 int main (int argc, char *argv [])
@@ -31,6 +31,7 @@ int searchlist_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
 int outer_loop = 0, inner_loop;		// counters for sort loops
+int swap_index;
 
 char switch_chr;			// args section
 char searchlist_filename [FILEPATH_LENGTH] = "";
@@ -143,12 +144,13 @@ do
 			searchlist_db [searchlist_lines].sha [SHA_LENGTH] = NULL_TERM;
 			strcpy (searchlist_db [searchlist_lines].filepath, fileline + SHA_LENGTH + 2);
 			searchlist_db [searchlist_lines].filepath[strlen (searchlist_db [searchlist_lines].filepath) - 1] = NULL_TERM;
-			strcpy (searchlist_db [searchlist_lines].dataset, "");	// added just in case
+			strcpy (searchlist_db [searchlist_lines].dataset, "");	// FIX insert dataset name (strip file extension from end in reverse loop)
 			}
 			else		// load SHA256DB data
 			{
 			separate_fields (searchlist_db [searchlist_lines].sha, searchlist_db [searchlist_lines].filepath, searchlist_db [searchlist_lines].dataset, fileline);
 			}
+		searchlist_db [searchlist_lines].index = searchlist_lines;
 		}
 	if (searchlist_lines + 1 == searchlist_alloc_size)		// check memory usage, reallocate
 		{
@@ -158,60 +160,18 @@ do
 	searchlist_lines ++;
 	} while (!feof (SEARCHLIST_FP));
 fclose (SEARCHLIST_FP);
-/*
 
-while (swap_made == TRUE)
-        {
-        swap_made = FALSE;
-        for (inner_loop = 0; inner_loop < fs_list_index - 1; inner_loop ++)
-                {
-                if (strcmp (fs_list [fs_list [inner_loop].index].filepath, fs_list [fs_list [inner_loop + 1].index].filepath) > 0)
-                        {
-                        swap_index = fs_list [inner_loop + 1].index;
-                        fs_list [inner_loop + 1].index = fs_list [inner_loop].index;
-                        fs_list [inner_loop].index = swap_index;
-                        swap_made = TRUE;
-                        }
-                }
-        }
-
-
-while (swap_made == TRUE)
-        {
-        swap_made = FALSE;
-        for (inner_loop = 0; inner_loop < database_line - 2; inner_loop ++)
-                {
-                if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
-                        {
-                        swap_index = ssort_db [inner_loop + 1].index;
-                        ssort_db [inner_loop + 1].index = ssort_db [inner_loop].index;
-                        ssort_db [inner_loop].index = swap_index;
-                        swap_made = TRUE;
-                        }
-                }
-        }
-if (outype == 's')
-        {
-        for (line_index = 0; line_index < database_line - 1; line_index ++)     // print output
-                {
-                printf("%s\n", ssort_db [ssort_db [line_index].index].filepath);
-                }
-        }
-
-
-
-*/
 // Sort section
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
 	for (inner_loop = 0; inner_loop < searchlist_lines - 2; inner_loop ++)
 		{
-		if (strcmp (searchlist_db [inner_loop].sha, searchlist_db [inner_loop + 1].sha) > 0)
+		if (strcmp (searchlist_db [searchlist_db [inner_loop].index].sha, searchlist_db [searchlist_db [inner_loop + 1].index].sha) > 0)
 			{
-			swap_db = searchlist_db [inner_loop + 1];
-			searchlist_db [inner_loop + 1] = searchlist_db [inner_loop];
-			searchlist_db [inner_loop] = swap_db;
+			swap_index = searchlist_db [inner_loop + 1].index;
+			searchlist_db [inner_loop + 1].index = searchlist_db [inner_loop].index;
+			searchlist_db [inner_loop].index = swap_index;
 			swap_made = TRUE;
 			}
 		}
@@ -233,7 +193,7 @@ while (swap_made == TRUE)
 hex_idx = 0;
 for (line_index = 0; line_index < searchlist_lines; line_index ++)	// build search list index - first pass
 	{
-	hex_char = searchlist_db [line_index].sha [0];	// get first hex character of SHA256SUM
+	hex_char = searchlist_db [searchlist_db [line_index].index].sha [0];	// get first hex character of SHA256SUM
 	while (hex_lookup [(int) hex_idx].idx < hex_char)	// skip missing hex chars
 		{
 		hex_idx ++;
@@ -257,6 +217,7 @@ for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// build search list index - second
 		}
 	}
 hex_lookup [hex_idx - 1].last = line_index;	// set last line
+
 
 // Search section
 do
@@ -289,10 +250,10 @@ do
 		hex_char = hex_to_dec (database_db->sha [0]);				// get hex character from database target
 		for (search_index = hex_lookup [(int) hex_char].first - 1; search_index <= hex_lookup [(int) hex_char].last; search_index ++)
 			{														// loop through only one hex bracket
-			if (!strcmp (searchlist_db [search_index].sha, database_db->sha))	// SHA256SUMs match
+			if (!strcmp (searchlist_db [searchlist_db [search_index].index].sha, database_db->sha))	// SHA256SUMs match
 				{
 				smflags->shamatch_found = TRUE;
-				if (!strcmp (searchlist_db [search_index].dataset, database_db->dataset) && smflags->searchlist_type == S2DB_TYPE)
+				if (!strcmp (searchlist_db [searchlist_db [search_index].index].dataset, database_db->dataset) && smflags->searchlist_type == S2DB_TYPE) // FIX remove S2DB from test when dataset fixed above
 					{
 					smflags->dataset_match = 1;						// handle data set conflicts
 					smflags->dataset_conflict = 1;
@@ -307,7 +268,7 @@ do
 							}
 							else
 							{
-							strcpy (output_line, searchlist_db [search_index].filepath);	// multi search list output
+							strcpy (output_line, searchlist_db [searchlist_db [search_index].index].filepath);	// multi search list output
 							}
 						}	// END multi switch
 						else
@@ -323,7 +284,7 @@ do
 						}
 						else
 						{
-						strcpy (output_line, searchlist_db [search_index].filepath);	// multi search list output
+						strcpy (output_line, searchlist_db [searchlist_db [search_index].index].filepath);	// multi search list output
 						}
 					}	// END multi test else
 				}	// END found match
