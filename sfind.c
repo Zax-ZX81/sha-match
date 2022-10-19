@@ -539,45 +539,7 @@ if (sfflags->std_out == SW_OFF)
 		}
 	}
 
-
-/*
-
- // Sort section
-165 while (swap_made == TRUE)
-166         {
-167         swap_made = FALSE;
-168         for (inner_loop = 0; inner_loop < searchlist_lines - 2; inner_loop ++)
-169                 {
-170                 if (strcmp (searchlist_db [searchlist_db [inner_loop].index].sha, searchlist_db [searchlist_db [inner_loop + 1].index].sha) > 0)
-171                         {
-172                         swap_index = searchlist_db [inner_loop + 1].index;
-173                         searchlist_db [inner_loop + 1].index = searchlist_db [inner_loop].index;
-174                         searchlist_db [inner_loop].index = swap_index;
-175                         swap_made = TRUE;
-176                         }
-177                 }
-178         if (sort_need_check && swap_made)
-179                 {
-180                 if (searchlist_lines > SORT_MAX_LINES)           // abandon sort if file too big
-181                         {
-182                         fclose (DATABASE_FP);
-183                         free (searchlist_db);           // free memory
-184                         searchlist_db = NULL;
-185                         exit_error ("Not sorting, file has too many lines: ", searchlist_filename);
-186                         }
-187                 printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
-188                 }
-189         sort_need_check = FALSE;
-190         }*/
-
-
-/*for (inner_loop = 0; inner_loop < database_index - 1; inner_loop ++)
-	{
-	printf ("___%s\t%s\t%d\n", database_db [inner_loop].sha, database_db [inner_loop].filepath, database_db [inner_loop].index);
-	}*/
-
 // Sort section
-//while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 while (swap_made == TRUE && sfflags->sort > 0)
 	{
 	swap_made = FALSE;
@@ -618,11 +580,6 @@ while (swap_made == TRUE && sfflags->sort > 0)
 		}
 	sort_need_check = FALSE;
 	}
-
-/*for (inner_loop = 0; inner_loop < database_index - 1; inner_loop ++)
-	{
-	printf ("===%s\t%s\t%d\n", database_db [inner_loop].sha, database_db [inner_loop].filepath, database_db [inner_loop].index);
-	}*/
 
 // Output section
 if (sfflags->std_out == SW_OFF)
