@@ -75,7 +75,7 @@ struct filter_entry
 	char filepath [FILEPATH_LENGTH];
 	};
 
-struct ssort_database
+struct ssort_database	// FIX use struct from SMLib
 	{
 	char sha [SHA_LENGTH + 1];
 	char filepath [FILEPATH_LENGTH];
@@ -121,7 +121,7 @@ int database_alloc_size = DATABASE_INITIAL_SIZE;
 int database_ferr;				// database file error
 int database_line = 0;				// number of lines in search list
 
-char database_in_filename [FILEPATH_LENGTH] = "";	// output file name with extension
+char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
 char switch_chr;
 char database_extension [8] = "";			// holds database extension based on flag
@@ -311,7 +311,6 @@ if (DIR_PATH != NULL)
 	}
 
 // Feedback search section
-//printf ("___Database %s___\n", database_in_filename);
 while (find_list_read < find_list_write)
 	{
 	chdir (C_W_D);				// go back to the starting directory
@@ -365,7 +364,7 @@ while (find_list_read < find_list_write)
 	find_list_read ++;
 	}
 
-// Filter
+// Find files in filelist with filter
 fs_list = (struct file_sort_list_entry *) malloc (sizeof (struct file_sort_list_entry) * DATABASE_INITIAL_SIZE);
 fs_list_curr_size = DATABASE_INITIAL_SIZE;
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
@@ -418,7 +417,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		}
 	}
 
-// Sort
+// Sort filelist
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
@@ -478,13 +477,8 @@ do
 	database_line ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
-/*for (line_index = 0; line_index < database_line - 1; line_index ++)
-	{
-	printf("_-_%s\tli %d\tai %d\n", ssort_db [ssort_db [line_index].index].filepath, line_index, ssort_db [line_index].index);
-	}
-printf("_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx_\n");*/
 
-// Sort section
+// Database sort section
 swap_made = TRUE;
 while (swap_made == TRUE)
 	{
