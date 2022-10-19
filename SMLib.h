@@ -50,6 +50,7 @@ struct sha_database
 	char sha [SHA_LENGTH + 1];
 	char filepath [FILEPATH_LENGTH];
 	char dataset [DATASET_LENGTH];
+	int index;
 	};
 
 struct sfind_database
@@ -58,6 +59,7 @@ struct sfind_database
 	char filepath [FILEPATH_LENGTH];
 	char dataset [DATASET_LENGTH];
 	int filesize;
+	int index;
 	};
 
 struct shamatch_flags
