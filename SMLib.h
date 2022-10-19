@@ -58,7 +58,7 @@ struct sfind_database
 	char sha [SHA_LENGTH + 1];
 	char filepath [FILEPATH_LENGTH];
 	char dataset [DATASET_LENGTH];
-	int filesize;
+	long filesize;
 	int index;
 	};
 

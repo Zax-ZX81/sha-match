@@ -30,7 +30,7 @@ int searchlist_lines = 0;	// number of lines in search list
 int searchlist_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
-int outer_loop = 0, inner_loop;		// counters for sort loops
+int inner_loop;		// counters for sort loops
 int swap_index;
 
 char switch_chr;			// args section
@@ -45,7 +45,7 @@ char hex_lookup_offset;
 char swap_made = TRUE;
 char sort_need_check = TRUE;
 
-struct sha_database *searchlist_db, swap_db;
+struct sha_database *searchlist_db;
 struct sha_database database_db [1] = {0};
 struct shamatch_flags smflags [1] = {0};
 struct hex_lookup_line *hex_lookup;

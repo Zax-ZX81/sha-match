@@ -76,7 +76,7 @@ char filter_line_check (char *filter_line);
 int main (int argc, char *argv [])
 
 {
-struct sfind_database *database_db, swap_db;
+struct sfind_database *database_db;
 struct sfind_flags sfflags [1] = {0};
 struct dirent *dir_ents;
 struct stat file_stat;
@@ -100,12 +100,12 @@ int find_list_write = 0;			// number of file items found in search
 int find_list_read = 0;
 int database_index = 0;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
-int file_type_count = 0;
 int filter_ferr;
 int arg_no, switch_pos;
-int outer_loop, inner_loop;
+int inner_loop;
 int filter_curr_size = 0;
 int find_list_curr_size = 0;
+int swap_index;
 
 long file_size_total = 0;
 long file_size_accum = 0;
@@ -126,6 +126,7 @@ char C_W_D [FILEPATH_LENGTH];				// base directory of search
 char swap_made = TRUE;					// swap was made on last sort pass
 char filter_match = FALSE;
 char filter_check;
+char sort_need_check = TRUE;
 
 // Argument section
 for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
@@ -427,7 +428,6 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 					find_list [find_list_read].filesize = file_stat.st_size;		// get file size
 					}
 				}
-			file_type_count ++;		// increment file count
 			file_size_total += find_list [find_list_read].filesize;		// add file size to total
 			strcpy (database_db [database_index].filepath, find_list [find_list_read].filepath);		// load file line into database
 			strcpy (database_db [database_index].dataset, database_dataset);
@@ -441,7 +441,6 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		database_db = (struct sfind_database *) realloc (database_db, sizeof (struct sfind_database) * database_alloc_size);
 		}
 	}
-
 //Output verified filter section
 if (sfflags->filtering > 0)
 	{
@@ -469,7 +468,7 @@ if (sfflags->filtering > 0)
 	free (filter_list);
 	if (sfflags->std_out == SW_OFF)
 		{
-		printf ("%d files added.\n", file_type_count);
+		printf ("%d files added.\n", database_index);
 		}
 	}
 
@@ -485,7 +484,7 @@ if (sfflags->progress)
 	printf ("\n");
 	}
 file_size_mult = 100.0 / (float)file_size_total;
-for (line_index = 0; line_index < file_type_count; line_index ++)
+for (line_index = 0; line_index < database_index; line_index ++)
 	{
 	if (sfflags->progress)		// show progress based on file size percentage
 		{
@@ -539,37 +538,67 @@ if (sfflags->std_out == SW_OFF)
 		}
 	}
 
+
+/*
+
+ // Sort section
+165 while (swap_made == TRUE)
+166         {
+167         swap_made = FALSE;
+168         for (inner_loop = 0; inner_loop < searchlist_lines - 2; inner_loop ++)
+169                 {
+170                 if (strcmp (searchlist_db [searchlist_db [inner_loop].index].sha, searchlist_db [searchlist_db [inner_loop + 1].index].sha) > 0)
+171                         {
+172                         swap_index = searchlist_db [inner_loop + 1].index;
+173                         searchlist_db [inner_loop + 1].index = searchlist_db [inner_loop].index;
+174                         searchlist_db [inner_loop].index = swap_index;
+175                         swap_made = TRUE;
+176                         }
+177                 }
+178         if (sort_need_check && swap_made)
+179                 {
+180                 if (searchlist_lines > SORT_MAX_LINES)           // abandon sort if file too big
+181                         {
+182                         fclose (DATABASE_FP);
+183                         free (searchlist_db);           // free memory
+184                         searchlist_db = NULL;
+185                         exit_error ("Not sorting, file has too many lines: ", searchlist_filename);
+186                         }
+187                 printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
+188                 }
+189         sort_need_check = FALSE;
+190         }*/
 // Sort section
-outer_loop = 0;
-while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
+//while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
+while (swap_made == TRUE && sfflags->sort > 0)
 	{
 	swap_made = FALSE;
-	for (inner_loop = 0; inner_loop < file_type_count - 1; inner_loop ++)
+	for (inner_loop = 0; inner_loop < database_index - 2; inner_loop ++)
 		{
 		if (sfflags->sort == SORT_SHA)		// sort by SHA256sum, default
 			{
-			if (strcmp (database_db [inner_loop].sha, database_db [inner_loop + 1].sha) > 0)
+			if (strcmp (database_db [database_db [inner_loop].index].sha, database_db [database_db [inner_loop + 1].index].sha) > 0)
 				{
-				swap_db = database_db [inner_loop + 1];
-				database_db [inner_loop + 1] = database_db [inner_loop];
-				database_db [inner_loop] = swap_db;
+				swap_index = database_db [inner_loop + 1].index;
+				database_db [inner_loop + 1].index = database_db [inner_loop].index;
+				database_db [inner_loop].index = swap_index;
 				swap_made = TRUE;
 				}
 			}
 		if (sfflags->sort == SORT_FILE)		// sort by filepath
 			{
-			if (strcmp (database_db [inner_loop].filepath, database_db [inner_loop + 1].filepath) > 0)
+			if (strcmp (database_db [database_db [inner_loop].index].filepath, database_db [database_db [inner_loop + 1].index].filepath) > 0)
 				{
-				swap_db = database_db [inner_loop + 1];
-				database_db [inner_loop + 1] = database_db [inner_loop];
-				database_db [inner_loop] = swap_db;
+				swap_index = database_db [inner_loop + 1].index;
+				database_db [inner_loop + 1].index = database_db [inner_loop].index;
+				database_db [inner_loop].index = swap_index;
 				swap_made = TRUE;
 				}
 			}
 		}
-	if (outer_loop == 1 && swap_made)
+	if (sort_need_check && swap_made)
 		{
-		if (file_type_count > SORT_MAX_LINES)		// abandon sort if file too big
+		if (database_index > SORT_MAX_LINES)		// abandon sort if file too big
 			{
 			printf ("# %sNot sorting, file too big.%s\n", TEXT_YELLOW, TEXT_RESET);
 			sfflags->sort = SORT_NONE;
@@ -579,7 +608,7 @@ while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 			printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 			}
 		}
-	outer_loop ++;
+	sort_need_check = FALSE;
 	}
 
 // Output section
@@ -591,7 +620,7 @@ if (sfflags->std_out == SW_OFF)
 		exit_error ("Can't open database for output: ", database_filename);
 		}
 	}
-for (line_index = 0; line_index < file_type_count; line_index ++)	// write/print output
+for (line_index = 0; line_index < database_index; line_index ++)	// write/print output
 	{
 	if (sfflags->database_type == S2DB_TYPE)			// for S2DB output
 		{
@@ -618,7 +647,7 @@ for (line_index = 0; line_index < file_type_count; line_index ++)	// write/print
 	}
 if (sfflags->std_out == SW_OFF)
 	{
-	printf ("%d lines written to %s%s%s\n", file_type_count, TEXT_BLUE, database_filename, TEXT_RESET);
+	printf ("%d lines written to %s%s%s\n", database_index, TEXT_BLUE, database_filename, TEXT_RESET);
 	}
 // Clean-up section
 chdir (C_W_D);
@@ -629,6 +658,8 @@ free (find_list);
 find_list = NULL;
 //free (filter_list);
 //filter_list = NULL;
+
+printf ("\n\n\nint=%d\nlong=%d\n\n\n", sizeof(arg_no), sizeof(file_size_total));
 }
 
 
