@@ -432,6 +432,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 			strcpy (database_db [database_index].filepath, find_list [find_list_read].filepath);		// load file line into database
 			strcpy (database_db [database_index].dataset, database_dataset);
 			database_db [database_index].filesize = find_list [find_list_read].filesize;
+			database_db [database_index].index = database_index;
 			database_index ++;
 			}
 		}
@@ -568,6 +569,13 @@ if (sfflags->std_out == SW_OFF)
 188                 }
 189         sort_need_check = FALSE;
 190         }*/
+
+
+/*for (inner_loop = 0; inner_loop < database_index - 1; inner_loop ++)
+	{
+	printf ("___%s\t%s\t%d\n", database_db [inner_loop].sha, database_db [inner_loop].filepath, database_db [inner_loop].index);
+	}*/
+
 // Sort section
 //while (outer_loop < file_type_count && swap_made == TRUE && sfflags->sort > 0)
 while (swap_made == TRUE && sfflags->sort > 0)
@@ -611,6 +619,11 @@ while (swap_made == TRUE && sfflags->sort > 0)
 	sort_need_check = FALSE;
 	}
 
+/*for (inner_loop = 0; inner_loop < database_index - 1; inner_loop ++)
+	{
+	printf ("===%s\t%s\t%d\n", database_db [inner_loop].sha, database_db [inner_loop].filepath, database_db [inner_loop].index);
+	}*/
+
 // Output section
 if (sfflags->std_out == SW_OFF)
 	{
@@ -620,28 +633,32 @@ if (sfflags->std_out == SW_OFF)
 		exit_error ("Can't open database for output: ", database_filename);
 		}
 	}
-for (line_index = 0; line_index < database_index; line_index ++)	// write/print output
+for (line_index = 0; line_index < database_index - 1; line_index ++)	// write/print output
 	{
 	if (sfflags->database_type == S2DB_TYPE)			// for S2DB output
 		{
 		if (sfflags->std_out)
 			{
-			printf("%s\t%s\t%s\n", database_db [line_index].sha, database_db [line_index].filepath, database_db [line_index].dataset);
+			printf("%s\t%s\t%s\n", database_db [database_db [line_index].index].sha, \
+						database_db [database_db [line_index].index].filepath, \
+						database_db [database_db [line_index].index].dataset);
 			}
 			else
 			{
-			fprintf(DATABASE_FP, "%s\t%s\t%s\n", database_db [line_index].sha, database_db [line_index].filepath, database_db [line_index].dataset);
+			fprintf(DATABASE_FP, "%s\t%s\t%s\n", database_db [database_db [line_index].index].sha, \
+								database_db [database_db [line_index].index].filepath, \
+								database_db [database_db [line_index].index].dataset);
 			}
 		}
 		else		// for plain SHA256SUM output
 		{
 		if (sfflags->std_out)
 			{
-			printf("%s%s%s\n", database_db [line_index].sha, TWO_SPACES, database_db [line_index].filepath);
+			printf("%s%s%s\n", database_db [database_db [line_index].index].sha, TWO_SPACES, database_db [database_db [line_index].index].filepath);
 			}
 			else
 			{
-			fprintf(DATABASE_FP, "%s%s%s\n", database_db [line_index].sha, TWO_SPACES, database_db [line_index].filepath);
+			fprintf(DATABASE_FP, "%s%s%s\n", database_db [database_db [line_index].index].sha, TWO_SPACES, database_db [database_db [line_index].index].filepath);
 			}
 		}
 	}

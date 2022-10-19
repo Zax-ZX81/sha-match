@@ -118,10 +118,10 @@ int fs_list_index = 0;
 int outer_loop = 0, inner_loop;
 int swap_index;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
-int database_ferr;			// database file error
-int database_line = 0;	// number of lines in search list
+int database_ferr;				// database file error
+int database_line = 0;				// number of lines in search list
 
-char database_in_filename [FILEPATH_LENGTH] = "";		// output file name with extension
+char database_in_filename [FILEPATH_LENGTH] = "";	// output file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
 char switch_chr;
 char database_extension [8] = "";			// holds database extension based on flag
@@ -183,8 +183,6 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 		} 	// END else if int argv
 	}
 
-//printf ("Here 1\n");
-
 // Output open section
 if (sfflags->filtering > 0)
 	{
@@ -201,6 +199,7 @@ if (DATABASE_FP == NULL)
 	exit_error ("Can't find Database: ", database_in_filename);
 	}
 
+// Filter load section
 if (sfflags->filtering > 0)
 	{
 	filter_list = (struct filter_entry *) malloc (sizeof (struct filter_entry) * FILTER_INITIAL_SIZE);
