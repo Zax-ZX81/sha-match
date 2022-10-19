@@ -659,7 +659,6 @@ find_list = NULL;
 //free (filter_list);
 //filter_list = NULL;
 
-printf ("\n\n\nint=%d\nlong=%d\n\n\n", sizeof(arg_no), sizeof(file_size_total));
 }
 
 
