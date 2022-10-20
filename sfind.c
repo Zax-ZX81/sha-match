@@ -385,18 +385,20 @@ if (sfflags->filtering > 0 && sfflags->std_out == SW_OFF)
 // Database filepath load section
 database_db = (struct sfind_database *) malloc (sizeof (struct sfind_database) * database_alloc_size);		// allocate memory for database
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
-	{	// find_list [filter_index].filtered
-	find_list [filter_index].filtered = TRUE;					// set so that if not filtering all results are output
-	filter_match = FALSE;
+	{
+	find_list [find_list_read].filtered = TRUE;					// set so that if not filtering all results are output
+	filter_match = TRUE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
 		{
-		find_list [filter_index].filtered = FALSE;
+		find_list [find_list_read].filtered = FALSE;
+		filter_match = FALSE;
 		for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
 			{
 			if (strcmp (filter_list [filter_index].filepath, find_list [find_list_read].filepath) == 0 && \
 				filter_list [filter_index].object_type == T_FIL)			// match found
 				{
 				filter_match = TRUE;
+//				find_list [find_list_read].filtered = TRUE;
 				}
 			if (filter_list [filter_index].object_type == T_DIR)				// test for items in filter directory
 				{
@@ -405,19 +407,21 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				if (!strncmp (dir_filter_test, find_list [find_list_read].filepath, strlen (dir_filter_test)))	// match found
 					{
 					filter_match = TRUE;
+//					find_list [find_list_read].filtered = TRUE;
 					}
 				}
+//printf ("--- %s\t%s filt=%d\tfind=%d\n", filter_list [filter_index].filepath, find_list [find_list_read].filepath, filter_match, find_list [find_list_read].filtered);
 			}
 		if (sfflags->filtering == F_INCL && filter_match)		// output if match with inclusive filter
 			{
-			find_list [filter_index].filtered = TRUE;
+			find_list [find_list_read].filtered = TRUE;
 			}
 		if (sfflags->filtering == F_EXCL && !filter_match)		// output if no match with exclusive filter
 			{
-			find_list [filter_index].filtered = TRUE;
+			find_list [find_list_read].filtered = TRUE;
 			}
 		}
-	if (find_list [filter_index].filtered)		// output matching line
+	if (find_list [find_list_read].filtered)		// output matching line
 		{
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
