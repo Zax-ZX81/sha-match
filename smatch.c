@@ -170,7 +170,7 @@ do
 		ssort_db [searchlist_lines].index = searchlist_lines;
 		if (smflags->verbose)
 			{
-			printf ("LLL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [searchlist_lines].sha, \
+			printf ("SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [searchlist_lines].sha, \
 							ssort_db [searchlist_lines].filepath, \
 							ssort_db [searchlist_lines].dataset, \
 							ssort_db [searchlist_lines].index);
@@ -316,7 +316,7 @@ do
 				}	// END found match
 			if (smflags->verbose)
 				{
-				printf ("OOO\tSs=%s\tSf=%s\tSd=%s\tSi=%d\tDs=%s\tDf=%s\tDd=%s\tM=%d\tC=%d\n", ssort_db [ssort_db [search_index].index].sha, \
+				printf ("SS\tSs=%s\tSf=%s\tSd=%s\tSi=%d\tDs=%s\tDf=%s\tDd=%s\tSM=%d\tDC=%d\n", ssort_db [ssort_db [search_index].index].sha, \
 								ssort_db [ssort_db [search_index].index].filepath, \
 								ssort_db [ssort_db [search_index].index].dataset, \
 								ssort_db [search_index].index, \

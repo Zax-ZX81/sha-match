@@ -91,7 +91,13 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 					zero_sha = TRUE;
 					break;
 				default:
-					exit_error ("# SHA Dup [dfFlLmuVz] <database file>","");
+					printf ("%s# SHA Dup [dfFlLmuVz] <database file>\n", TEXT_YELLOW);
+					printf ("# [fFlL] mark which of a group to %sKEEP%s\n", TEXT_RED, TEXT_RESET);
+					printf ("%s# -f keeps first file in group\n", TEXT_YELLOW);
+					printf ("# -F keeps ALL BUT first file in group\n");
+					printf ("# -l keeps last file in group\n");
+					printf ("# -L keeps ALL BUT last file in group%s\n", TEXT_RESET);
+					exit (0);
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv

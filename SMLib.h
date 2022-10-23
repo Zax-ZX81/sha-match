@@ -107,6 +107,7 @@
 #define TEXT_YELLOW "\33[93m"
 #define TEXT_BLUE "\33[94m"
 #define TEXT_ORANGE "\33[33m"
+#define TEXT_RED "\33[1m\33[91m"
 #endif
 
 #if _WIN32
