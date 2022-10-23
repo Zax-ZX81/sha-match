@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *     SHA-Convert 0.30          *
+ *     SHA-Convert 0.40          *
  *                               *
- *     2020-11-04                *
+ *     2022-10-22                *
  *                               *
  *     Zax                       *
  *                               *
@@ -13,14 +13,13 @@
 #include <string.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.30"
-
+#define PROG_VERSION "0.40"
 
 int main (int argc, char *argv [])
 
 {
 
-FILE *SEARCHLIST_FP, *DATABASE_FP;
+FILE *SSDB_IN_FP, *SSDB_OUT_FP;
 
 int searchlist_ferr;
 int line_count = 0;
@@ -29,7 +28,7 @@ char searchlist_filename [FILEPATH_LENGTH] = "";
 char database_filename [FILEPATH_LENGTH] = "";
 char fileline [FILELINE_LENGTH] = "";
 
-struct sha_database database_db [1] = {0};
+struct sha_sort_database ssort_db [1] = {0};
 
 // Argument section
 if (argc > FILE_ARG)
@@ -51,18 +50,18 @@ if (strcmp (strchr (searchlist_filename, '.'), SHA256_EXTENSION))
 	}
 
 // Input open section
-SEARCHLIST_FP = fopen (searchlist_filename,"r");
-if (SEARCHLIST_FP == NULL)
+SSDB_IN_FP = fopen (searchlist_filename,"r");
+if (SSDB_IN_FP == NULL)
 	{
 	exit_error ("Can't find Search List: ", searchlist_filename);
 	}
 
 // Output open section
-strncpy (database_db->dataset, searchlist_filename, strlen (searchlist_filename) - strlen (SHA256_EXTENSION));
-strcat (database_filename, database_db->dataset);
+strncpy (ssort_db->dataset, searchlist_filename, strlen (searchlist_filename) - strlen (SHA256_EXTENSION));
+strcat (database_filename, ssort_db->dataset);
 strcat (database_filename, S2DB_EXTENSION);			// compose output filename
-DATABASE_FP = fopen (database_filename,"w");
-if (DATABASE_FP == NULL)
+SSDB_OUT_FP = fopen (database_filename,"w");
+if (SSDB_OUT_FP == NULL)
 	{
 	exit_error ("Can't open Database: ", database_filename);
 	}
@@ -71,32 +70,32 @@ if (DATABASE_FP == NULL)
 printf ("SHA Convert version %s\nConverting %s%s%s to %s%s%s", PROG_VERSION, TEXT_YELLOW, searchlist_filename, TEXT_RESET, TEXT_BLUE, database_filename, TEXT_RESET);
 do
 	{
-	searchlist_ferr = (long)fgets (fileline, FILEPATH_LENGTH, SEARCHLIST_FP);
+	searchlist_ferr = (long)fgets (fileline, FILEPATH_LENGTH, SSDB_IN_FP);
 	if (fileline != NULL && searchlist_ferr)
 		{
 		if (sha_verify (fileline))		// check first 64 bytes for hex characters
 			{
-			strncpy (database_db->sha, fileline, SHA_LENGTH);			// load SHA256SUM into database struct
-			database_db->sha [SHA_LENGTH] = NULL_TERM;					// add NULL terminator
-			strcpy (database_db->filepath, fileline + SHA_OFFSET);		// load filepath into database struct
-			database_db->filepath [strlen (database_db->filepath) - 1] = NULL_TERM;		// add NULL terminator
-			fprintf (DATABASE_FP, "%s\n", three_fields (database_db->sha, database_db->filepath, database_db->dataset));
+			strncpy (ssort_db->sha, fileline, SHA_LENGTH);				// load SHA256SUM into database struct
+			ssort_db->sha [SHA_LENGTH] = NULL_TERM;					// add NULL terminator
+			strcpy (ssort_db->filepath, fileline + SHA_OFFSET);			// load filepath into database struct
+			ssort_db->filepath [strlen (ssort_db->filepath) - 1] = NULL_TERM;	// add NULL terminator
+			fprintf (SSDB_OUT_FP, "%s\n", three_fields (ssort_db->sha, ssort_db->filepath, ssort_db->dataset));
 			}		// write database struct contents to output file
 			else
 			{
-			fclose (SEARCHLIST_FP);
-			fclose (DATABASE_FP);
+			fclose (SSDB_IN_FP);
+			fclose (SSDB_OUT_FP);
 			remove (database_filename);
 			exit_error ("   ...unrecognised file type: ", searchlist_filename);
 			}
 		line_count ++;
 		}
-	} while (!feof (SEARCHLIST_FP));
+	} while (!feof (SSDB_IN_FP));
 printf ("   ...%d lines complete.\n", line_count);
 
 // File close section
-fclose (SEARCHLIST_FP);
-fclose (DATABASE_FP);
+fclose (SSDB_IN_FP);
+fclose (SSDB_OUT_FP);
 
 }
 

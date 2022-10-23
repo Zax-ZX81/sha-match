@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * *
  *                             *
- *     SMLib.c       0.31      *
+ *     SMLib.c       0.40      *
  *                             *
- *     2020-10-31     Zax      *
+ *     2022-10-22     Zax      *
  *                             *
  * * * * * * * * * * * * * * * */
 
@@ -111,4 +111,41 @@ strcat (out_string, filepath);
 strcat (out_string, quote_marks);
 
 return out_string;
+}
+
+
+char filter_line_check (char *filter_line)
+{
+char first_char;
+
+if (strchr (filter_line, ':') != NULL)
+	{
+	return (0);
+	}
+first_char = filter_line [0];
+if (first_char == 47)		// ' rejected
+	{
+	return (0);
+	}
+if (first_char == 95)		// _ rejected
+	{
+	return (0);
+	}
+if (first_char == 35)		// # char marks comment
+	{
+	return (2);
+	}
+if (first_char < 45 || first_char > 122)	// NUL -> , and chrs beyond z rejected
+	{
+	return (0);
+	}
+if (first_char < 65 && first_char > 57)		// : -> @ rejected
+	{
+	return (0);
+	}
+if (first_char < 97 && first_char > 90)		// chrs between upper and lower case rejected
+	{
+	return (0);
+	}
+return (1);
 }

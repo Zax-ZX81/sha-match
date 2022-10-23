@@ -1,8 +1,8 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Sort 0.02          *
+ *        SHA-Sort 0.10          *
  *                               *
- *        2020-12-01             *
+ *        2022-10-22             *
  *                               *
  *        Zax                    *
  *                               *
@@ -13,14 +13,6 @@
 #include <string.h>
 #include "SMLib.h"
 #include <time.h>
-
-struct ssort_database
-	{
-	char sha [SHA_LENGTH + 1];
-	char filepath [FILEPATH_LENGTH];
-	char dataset [DATASET_LENGTH];
-	int index;
-	};
 
 int main (int argc, char *argv [])
 
@@ -33,7 +25,6 @@ int database_line = 0;	// number of lines in search list
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index = 0;
 int database_ferr;			// database file error
-int outer_loop = 0, inner_loop;		// counters for sort loops
 int swap_index;
 
 char switch_chr;			// args section
@@ -42,10 +33,11 @@ char fileline [FILELINE_LENGTH];				// input line
 char swap_made = TRUE;
 char database_type;
 char print_result = FALSE;
+char sort_need_check = TRUE;
 
 time_t start_time;
 
-struct ssort_database *ssort_db;
+struct sha_sort_database *ssort_db;
 
 // Arguments section
 
@@ -80,7 +72,7 @@ if (DATABASE_FP == NULL)
 	}
 
 // Database load section
-ssort_db = (struct ssort_database *) malloc (sizeof (struct ssort_database) * database_alloc_size);
+ssort_db = (struct sha_sort_database *) malloc (sizeof (struct sha_sort_database) * database_alloc_size);
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
@@ -111,7 +103,7 @@ do
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
-		ssort_db = (struct ssort_database *) realloc (ssort_db, sizeof (struct ssort_database) * database_alloc_size);
+		ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
 		}
 	database_line ++;
 	} while (!feof (DATABASE_FP));
@@ -119,26 +111,24 @@ fclose (DATABASE_FP);
 
 // Sort section
 start_time = time (NULL);
-outer_loop = 1;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (inner_loop = 0; inner_loop < database_line - 1; inner_loop ++)
+	for (line_index = 0; line_index < database_line - 1; line_index ++)
 		{
-//		if (strcmp (ssort_db [ssort_db [inner_loop].index].sha, ssort_db [ssort_db [inner_loop + 1].index].sha) > 0)
-		if (strcmp (ssort_db [ssort_db [inner_loop].index].filepath, ssort_db [ssort_db [inner_loop + 1].index].filepath) > 0)
+		if (strcmp (ssort_db [ssort_db [line_index].index].filepath, ssort_db [ssort_db [line_index + 1].index].filepath) > 0)
 			{
-			swap_index = ssort_db [inner_loop + 1].index;
-			ssort_db [inner_loop + 1].index = ssort_db [inner_loop].index;
-			ssort_db [inner_loop].index = swap_index;
+			swap_index = ssort_db [line_index + 1].index;
+			ssort_db [line_index + 1].index = ssort_db [line_index].index;
+			ssort_db [line_index].index = swap_index;
 			swap_made = TRUE;
 			}
 		}
-	if (outer_loop == 2 && swap_made)
+	if (sort_need_check && swap_made)
 		{
 		printf ("# %sSorting...%s\n", TEXT_YELLOW, TEXT_RESET);
 		}
-	outer_loop ++;
+	sort_need_check = FALSE;
 	}
 printf ("%d seconds.\n", time (NULL) - start_time);
 if (print_result)
