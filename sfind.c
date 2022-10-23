@@ -38,8 +38,8 @@ sfflags->progress = SW_ON;			// show progress by default
 
 FILE *SHA_PIPE;
 FILE *FILT_IN_FP;				// inclusion and exclusion filter list
-FILE *FILT_OUT_FP;
-FILE *SSDB_OUT_FP;
+FILE *FILT_OUT_FP;				// parsed filter list out file
+FILE *SSDB_OUT_FP;				// Output file
 DIR *DIR_PATH;
 
 int line_index;
@@ -86,32 +86,32 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch_chr = (int) argv [arg_no] [switch_pos];
 			switch (switch_chr)
 				{
-				case 'f':
+				case 'f':						// Sort by file name instead of sha sum
 					sfflags->sort = SORT_FILE;
 					break;
 				case 'i':
-					sfflags->filtering = F_INCL;
+					sfflags->filtering = F_INCL;			// Filter type inclusive
 					break;
 				case 'n':
-					sfflags->progress = SW_OFF;
+					sfflags->progress = SW_OFF;			// Supress sha sum progress
 					break;
 				case 'o':
-					sfflags->database_type = SHA256_TYPE;
+					sfflags->database_type = SHA256_TYPE;		// Write output to match SHA256SUM
 					break;
 				case 's':
-					sfflags->std_out = SW_ON;				// if std_out only, supress file opening/writing
+					sfflags->std_out = SW_ON;			// if std_out only, supress file opening/writing
 					break;
 				case 'u':
-					sfflags->sort = SORT_NONE;
+					sfflags->sort = SORT_NONE;			// Don't sort output file
 					break;
 				case 'v':
-					sfflags->verbose = SW_ON;
+					sfflags->verbose = SW_ON;			// Verbose/debugging output
 					break;
 				case 'V':
 					printf ("SHA Find version %s\n", PROG_VERSION);
 					exit (0);
 				case 'x':
-					sfflags->filtering = F_EXCL;
+					sfflags->filtering = F_EXCL;			// Filter type exclusive
 					break;
 				default:
 					exit_error ("# SHA find [-finosuvVx] <search file> <database file>","");
@@ -142,7 +142,7 @@ if (sfflags->database_type == S2DB_TYPE)
 	{
 	strcpy (database_extension, SHA256_EXTENSION);
 	}
-if (sfflags->filtering > 0)
+if (sfflags->filtering)
 	{
 	FILT_IN_FP = fopen (FILTER_FILE, "r");
 	if (FILT_IN_FP == NULL)
@@ -152,7 +152,7 @@ if (sfflags->filtering > 0)
 	}
 
 // Filter section
-if (sfflags->filtering > 0)
+if (sfflags->filtering)
 	{
 	filter_list = (struct filter_list_entry *) malloc (sizeof (struct filter_list_entry) * FILTER_INITIAL_SIZE);
 	filter_curr_size = FILTER_INITIAL_SIZE;
@@ -196,7 +196,9 @@ if (sfflags->filtering > 0)
 				}
 			if (sfflags->verbose)
 				{
-				printf ("F-%d__%c__%s\n", filter_index, filter_list [filter_index].object_type, filter_list [filter_index].filepath);
+				printf ("F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
+								filter_list [filter_index].object_type, \
+								filter_list [filter_index].filepath);
 				}
 			}
 		if (filter_index + 1 == filter_curr_size)		// allocated more memory if needed
@@ -240,16 +242,18 @@ if (DIR_PATH != NULL)
 			default:							// mark as unneeded type
 				find_list [find_list_write].object_type = T_REJ;
 				break;
-			}								// VVV filter out ".", ".." and database file from search
+			}
 		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
 			&& strcmp (dir_ents->d_name, database_filename)))
-			{
+			{						// Filter out ".", ".." and database file from search
 			find_list [find_list_write].object_type = T_REJ;
 			}
 		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
 		if (sfflags->verbose)
 			{
-			printf ("%3d %c %2d -%s-\n", find_list_write, find_list [find_list_write].object_type, dir_ents->d_type, dir_ents->d_name);
+			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+								find_list [find_list_write].object_type, \
+								dir_ents->d_type, dir_ents->d_name);
 			}
 		if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
 			{
@@ -290,10 +294,10 @@ while (find_list_read < find_list_write)
 					default:						// mark as unneeded type
 						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
 						break;
-					}							// VVV filter out "." and ".." from search
+					}
 				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 					{
-					find_list [find_list_write].object_type = T_REJ;
+					find_list [find_list_write].object_type = T_REJ;	// VVV filter out "." and ".." from search
 					}
 				strcpy (find_list [find_list_write].filepath, find_list [find_list_read].filepath);
 				strcat (find_list [find_list_write].filepath, "/");
@@ -305,7 +309,9 @@ while (find_list_read < find_list_write)
 					}
 				if (sfflags->verbose)
 					{
-					printf ("%d %c >%s<\n", find_list_write, find_list [find_list_write].object_type, find_list [find_list_write].filepath);
+					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
+									find_list [find_list_write].object_type, \
+									find_list [find_list_write].filepath);
 					}
 				find_list_write ++;
 				}
@@ -343,7 +349,6 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				filter_list [filter_index].object_type == T_FIL)		// match found
 				{
 				filter_match = TRUE;
-//				find_list [find_list_read].filtered = TRUE;
 				}
 			if (filter_list [filter_index].object_type == T_DIR)			// test for items in filter directory
 				{
@@ -352,10 +357,16 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				if (!strncmp (dir_filter_test, find_list [find_list_read].filepath, strlen (dir_filter_test)))	// match found
 					{
 					filter_match = TRUE;
-//					find_list [find_list_read].filtered = TRUE;
 					}
 				}
-//printf ("--- %s\t%s filt=%d\tfind=%d\n", filter_list [filter_index].filepath, find_list [find_list_read].filepath, filter_match, find_list [find_list_read].filtered);
+				if (sfflags->verbose)
+					{
+					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
+										find_list_read, \
+										filter_list [filter_index].filepath, \
+										find_list [find_list_read].filepath, filter_match, \
+										find_list [find_list_read].filtered);
+					}
 			}
 		if (sfflags->filtering == F_INCL && filter_match)		// output if match with inclusive filter
 			{
@@ -402,12 +413,16 @@ if (sfflags->filtering > 0)
 		}
 	for (filter_index = 0; filter_index < filter_line_count; filter_index ++)
 		{
-//printf ("F-%d__%c__%s\n", filter_index, filter_list [filter_index].object_type, filter_list [filter_index].filepath);
+	if (sfflags->verbose)
+		{
+		printf ("OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
+						filter_list [filter_index].object_type, \
+						filter_list [filter_index].filepath);
+		}
 		if (filter_index == 0 && filter_list [filter_index].object_type != T_COM)
 			{
 			fprintf (FILT_OUT_FP, "# Automatically generated by %s\n", FILTER_PROG_NAME);
 			}
-//		if (filter_list [filter_index].object_type != T_REJ && filter_index != 0)	MISSING FIRST LINE OF FILTER LIST
 		if (filter_list [filter_index].object_type != T_REJ)
 			{
 			fprintf (FILT_OUT_FP, "%s\n", filter_list [filter_index].filepath);
@@ -435,13 +450,18 @@ if (sfflags->progress)
 file_size_mult = 100.0 / (float)file_size_total;
 for (line_index = 0; line_index < database_index; line_index ++)
 	{
+	file_size_accum += sfind_db [line_index].filesize;
+	file_progress = file_size_mult * (float)file_size_accum;
 	if (sfflags->progress)		// show progress based on file size percentage
 		{
-		file_size_accum += sfind_db [line_index].filesize;
-		file_progress = file_size_mult * (float)file_size_accum;
-//printf ("FST=%ul\tFSM=%f\tFS=%ul\tFP=%f\n", file_size_total, file_size_mult, sfind_db [line_index].filesize, file_progress);
-		fprintf (stderr, "%c% 6.2f%%", CGE_RET, file_progress);
+		fprintf (stderr, "%c%6.2f%%", CGE_RET, file_progress);
 		}
+	if (sfflags->verbose)
+		{
+		printf ("FST=%u\tFSM=%f\tFS=%u\tFP=%6.2f\n", file_size_total, file_size_mult, \
+							sfind_db [line_index].filesize, file_progress);
+		}
+
 #if _WIN32							// ### Windows SHA256 generation ###
 	if (sfind_db [line_index].filesize == 0)		// handle zero file size because of certutil failure
 		{
@@ -471,7 +491,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 		strcpy (sfind_db [line_index].dataset, database_dataset);
 		if (sfflags->verbose)
 			{
-			printf ("Size=%ul\t%s", sfind_db [line_index].filesize, sha_line);
+			printf ("Size=%u\t%s\n", sfind_db [line_index].filesize, sha_line);
 			}
 		}
 		else
