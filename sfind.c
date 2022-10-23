@@ -114,8 +114,10 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					sfflags->filtering = F_EXCL;			// Filter type exclusive
 					break;
 				default:
-					exit_error ("# SHA find [-finosuvVx] <search file> <database file>","");
-					break;
+					printf ("%s# SHA find [-finosuvVx] <search file> <database file>\n", TEXT_YELLOW);
+					printf ("# -i include ONLY files in sf_filter\n");
+					printf ("# -x exclude ALL files in sf_filter\n%s", TEXT_RESET);
+					exit (0);
 				}	// END switch
 			}	// END for switch_pos
 		}	// END for arg_no

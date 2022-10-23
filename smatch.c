@@ -89,7 +89,9 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					smflags->zero = SW_ON;
 					break;
 				default:
-					exit_error ("# SHA Match [dimvVz] <search file> <database file>","");
+					printf ("%s# SHA Match [dimvVz] <search file> <database file>\n", TEXT_YELLOW);
+					printf ("# -i invert output\n%s", TEXT_RESET);
+					exit (0);
 				}	// END switch
 			}	// END for switch_pos
 		}	// END if int argv
