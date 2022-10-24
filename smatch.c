@@ -163,7 +163,7 @@ do
 			ssort_db [searchlist_lines].sha [SHA_LENGTH] = NULL_TERM;
 			strcpy (ssort_db [searchlist_lines].filepath, fileline + SHA_LENGTH + 2);
 			ssort_db [searchlist_lines].filepath[strlen (ssort_db [searchlist_lines].filepath) - 1] = NULL_TERM;
-			strcpy (ssort_db [searchlist_lines].dataset, dataset_name);	// FIX insert dataset name (strip file extension from end in reverse loop)
+			strcpy (ssort_db [searchlist_lines].dataset, dataset_name);
 			}
 			else		// load SHA256DB data
 			{
@@ -276,11 +276,11 @@ do
 			}
 		hex_char = hex_to_dec (sha_db->sha [0]);			// get hex character from database target
 		for (search_index = hex_lookup [(int) hex_char].first - 1; search_index <= hex_lookup [(int) hex_char].last; search_index ++)
-			{														// loop through only one hex bracket
+			{										// loop through only one hex bracket
 			if (!strcmp (ssort_db [ssort_db [search_index].index].sha, sha_db->sha))	// SHA256SUMs match
 				{
 				smflags->shamatch_found = TRUE;
-				if (!strcmp (ssort_db [ssort_db [search_index].index].dataset, sha_db->dataset)) // FIX remove S2DB from test when dataset fixed above
+				if (!strcmp (ssort_db [ssort_db [search_index].index].dataset, sha_db->dataset))
 					{
 					smflags->dataset_match = TRUE;						// handle data set conflicts
 					smflags->dataset_conflict = TRUE;

@@ -56,7 +56,7 @@ int outer_loop = 0;				// DEL
 int swap_index;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 int database_ferr;				// database file error
-int database_line = 0;				// number of lines in search list
+int database_index = 0;				// number of lines in search list
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
@@ -137,7 +137,7 @@ if (DATABASE_FP == NULL)
 	}
 
 // Filter load section
-if (sfflags->filtering > 0)
+if (sfflags->filtering)
 	{
 	filter_list = (struct filter_list_entry *) malloc (sizeof (struct filter_list_entry) * FILTER_INITIAL_SIZE);
 	filter_curr_size = FILTER_INITIAL_SIZE;
@@ -179,37 +179,11 @@ if (sfflags->filtering > 0)
 					filter_list [filter_index].object_type = T_REJ;         // mark as rejected
 					break;
 				}
-/*
-			if (filter_check)
-				{
-				if (stat (filter_list [filter_index].filepath, &file_stat) == 0)
-					{
-					if (file_stat.st_mode & S_IFREG)
-						{
-						filter_list [filter_index].object_type = T_FIL;		// mark as file
-						}
-					if (file_stat.st_mode & S_IFDIR)
-						{
-						filter_list [filter_index].object_type = T_DIR;		// mark as directory
-						}
-					}
-					else
-					{
-					filter_list [filter_index].object_type = T_REJ;		// mark as rejected
-					}
-				if (filter_check == 2)
-					{
-					filter_list [filter_index].object_type = T_COM;		// mark as comment
-					}
-				}
-				else
-				{
-				filter_list [filter_index].object_type = T_REJ;		// mark as rejected
-				}
-*/
 			if (sfflags->verbose)
 				{
-				printf ("F-%d__%c__%s\n", filter_index, filter_list [filter_index].object_type, filter_list [filter_index].filepath);
+				printf ("F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
+								filter_list [filter_index].object_type, \
+								filter_list [filter_index].filepath);
 				}
 			}
 		if (filter_index + 1 == filter_curr_size)		// allocated more memory if needed
@@ -247,15 +221,18 @@ if (DIR_PATH != NULL)
 			default:						// mark as unneeded type
 				find_list [find_list_write].object_type = T_REJ;
 				break;
-			}								// VVV filter out ".", ".." and temp file from search
-		if (!strcmp (dir_ents->d_name, DIR_CURRENT) || !strcmp (dir_ents->d_name, DIR_PREV) || !strcmp (dir_ents->d_name, database_in_filename))
-			{
+			}
+		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
+			&& strcmp (dir_ents->d_name, database_in_filename)))
+			{						// Filter out ".", ".." and database file from search
 			find_list [find_list_write].object_type = T_REJ;
 			}
 		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
 		if (sfflags->verbose)
 			{
-			printf ("%3d %c %2d -%s-\n", find_list_write, find_list [find_list_write].object_type, dir_ents->d_type, dir_ents->d_name);
+			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+								find_list [find_list_write].object_type, \
+								dir_ents->d_type, dir_ents->d_name);
 			}
 		if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
 			{
@@ -296,22 +273,24 @@ while (find_list_read < find_list_write)
 					default:						// mark as unneeded type
 						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
 						break;
-					}							// VVV filter out "." and ".." from search
-				if (!strcmp (dir_ents->d_name, DIR_CURRENT) || !strcmp (dir_ents->d_name, DIR_PREV) || !strcmp (dir_ents->d_name, database_in_filename))
+					}
+				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 					{
-					find_list [find_list_write].object_type = T_REJ;
+					find_list [find_list_write].object_type = T_REJ;	// filter out "." and ".." from search
 					}
 				strcpy (find_list [find_list_write].filepath, find_list [find_list_read].filepath);
 				strcat (find_list [find_list_write].filepath, "/");
 				strcat (find_list [find_list_write].filepath, dir_ents->d_name);
-				if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
+				if (find_list_write + 1 == find_list_curr_size)			// allocated more memory if needed
 					{
 					find_list_curr_size += DATABASE_INCREMENT;
 					find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
 					}
 				if (sfflags->verbose)
 					{
-					printf ("%d %c >%s<\n", find_list_write, find_list [find_list_write].object_type, find_list [find_list_write].filepath);
+					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
+									find_list [find_list_write].object_type, \
+									find_list [find_list_write].filepath);
 					}
 				find_list_write ++;
 				}
@@ -332,10 +311,11 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
 //printf (".");
 	find_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
-	filter_match = FALSE;
+	filter_match = TRUE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
 		{
 		find_list [find_list_read].filtered = FALSE;
+		filter_match = FALSE;
 		for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
 			{
 			if (strcmp (filter_list [filter_index].filepath, find_list [find_list_read].filepath) == 0 && \
@@ -352,6 +332,14 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 					filter_match = TRUE;
 					}
 				}
+				if (sfflags->verbose)
+					{
+					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
+										find_list_read, \
+										filter_list [filter_index].filepath, \
+										find_list [find_list_read].filepath, filter_match, \
+										find_list [find_list_read].filtered);
+					}
 			}
 		if (sfflags->filtering == F_INCL && filter_match)		// output if match with inclusive filter
 			{
@@ -377,6 +365,44 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		fs_list = (struct fs_list_entry *) realloc (find_list, sizeof (struct fs_list_entry) * fs_list_curr_size);
 		}
 	}
+
+
+// Output verified filter section
+if (sfflags->filtering)
+	{
+	rename (FILTER_FILE, FILTER_BK);		//rename old filter
+	FILT_OUT_FP = fopen (FILTER_FILE, "w");
+	if (FILT_OUT_FP == NULL)
+		{
+		exit_error ("Can't open filter for writing", "");
+		}
+	for (filter_index = 0; filter_index < filter_line_count; filter_index ++)
+		{
+		if (sfflags->verbose)
+			{
+			printf ("OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
+							filter_list [filter_index].object_type, \
+							filter_list [filter_index].filepath);
+			}
+		if (filter_index == 0 && filter_list [filter_index].object_type != T_COM)
+			{
+			fprintf (FILT_OUT_FP, "# Automatically generated by %s\n", FILTER_PROG_NAME);
+			}
+		if (filter_list [filter_index].object_type != T_REJ)
+			{
+			fprintf (FILT_OUT_FP, "%s\n", filter_list [filter_index].filepath);
+			}
+		}
+	fclose (FILT_OUT_FP);
+	free (filter_list);
+	if (sfflags->std_out == SW_OFF)
+		{
+		printf ("%d files added.\n", database_index);
+		}
+	}
+
+chdir (C_W_D);		// go back to the starting directory
+
 
 // Sort filelist
 while (swap_made == TRUE)
@@ -406,7 +432,7 @@ ssort_db = (struct sha_sort_database *) malloc (sizeof (struct sha_sort_database
 do
 	{
 	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
-	if (database_line == 0)
+	if (database_index == 0)
 		{
 		database_type = sha_verify (fileline);
 		if (database_type == UNKNOWN_TYPE)
@@ -418,24 +444,31 @@ do
 		{
 		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 			{
-			strncpy (ssort_db [database_line].sha, fileline, SHA_LENGTH);
-			ssort_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (ssort_db [database_line].filepath, fileline + SHA_LENGTH + 2);
-			ssort_db [database_line].filepath[strlen (ssort_db [database_line].filepath) - 1] = NULL_TERM;
-			strcpy (ssort_db [database_line].dataset, "");
+			strncpy (ssort_db [database_index].sha, fileline, SHA_LENGTH);
+			ssort_db [database_index].sha [SHA_LENGTH] = NULL_TERM;
+			strcpy (ssort_db [database_index].filepath, fileline + SHA_LENGTH + 2);
+			ssort_db [database_index].filepath[strlen (ssort_db [database_index].filepath) - 1] = NULL_TERM;
+			strcpy (ssort_db [database_index].dataset, "");
 			}
 			else		// load SHA256DB data
 			{
-			separate_fields (ssort_db [database_line].sha, ssort_db [database_line].filepath, ssort_db [database_line].dataset, fileline);
+			separate_fields (ssort_db [database_index].sha, ssort_db [database_index].filepath, ssort_db [database_index].dataset, fileline);
 			}
-		ssort_db [database_line].index = database_line;	// load sort index in start position
+		ssort_db [database_index].index = database_index;	// load sort index in start position
+		if (sfflags->verbose)
+			{
+			printf ("SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [database_index].sha, \
+							ssort_db [database_index].filepath, \
+							ssort_db [database_index].dataset, \
+							ssort_db [database_index].index);
+			}
 		}
-	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
+	if (database_index + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
 		ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
 		}
-	database_line ++;
+	database_index ++;
 	} while (!feof (DATABASE_FP));
 fclose (DATABASE_FP);
 
@@ -444,7 +477,7 @@ swap_made = TRUE;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (line_index = 0; line_index < database_line - 2; line_index ++)
+	for (line_index = 0; line_index < database_index - 2; line_index ++)
 		{
 		if (strcmp (ssort_db [ssort_db [line_index].index].filepath, ssort_db [ssort_db [line_index + 1].index].filepath) > 0)
 			{
@@ -457,7 +490,7 @@ while (swap_made == TRUE)
 	}
 if (outype == 's')
 	{
-	for (line_index = 0; line_index < database_line - 1; line_index ++)	// print output
+	for (line_index = 0; line_index < database_index - 1; line_index ++)	// print output
 		{
 		printf("%s\n", ssort_db [ssort_db [line_index].index].filepath);
 		}
@@ -469,10 +502,5 @@ chdir (C_W_D);
 //database_db = NULL;
 free (find_list);
 find_list = NULL;
-if (sfflags->filtering > 0)
-	{
-	free (filter_list);
-	filter_list = NULL;
-	}
 
 }
