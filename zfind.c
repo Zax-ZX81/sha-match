@@ -25,7 +25,6 @@ char filter_line_check (char *filter_line);
 int main (int argc, char *argv [])
 
 {
-struct sfind_database *database_db, swap_db;	// DEL
 struct sfind_flags sfflags [1] = {0};
 struct dirent *dir_ents;
 struct stat file_stat;
@@ -52,7 +51,6 @@ int filter_curr_size = 0;
 int find_list_curr_size = 0;
 int fs_list_curr_size = 0;
 int fs_list_index = 0;
-int outer_loop = 0;				// DEL
 int swap_index;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 int database_ferr;				// database file error
@@ -64,7 +62,6 @@ int db_new_offset = 0;
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
 char switch_chr;
-char database_extension [8] = "";			// holds database extension based on flag
 char path_sub [FILEPATH_LENGTH];			// holds SHA256SUM file argument
 char dir_filter_test [FILEPATH_LENGTH] = "";		// holds composed directory for filter
 char C_W_D [FILEPATH_LENGTH];				// base directory of search
