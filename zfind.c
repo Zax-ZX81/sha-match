@@ -59,6 +59,7 @@ int database_ferr;				// database file error
 int database_index = 0;				// number of lines in search list
 int file_index = 0;
 int db_index = 0;
+int db_new_offset = 0;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
@@ -399,7 +400,7 @@ if (sfflags->filtering)
 	free (filter_list);
 	if (sfflags->std_out == SW_OFF)
 		{
-		printf ("%d files added.\n", database_index);
+		printf ("%d files added.\n", filter_index);
 		}
 	}
 
@@ -490,48 +491,67 @@ while (swap_made == TRUE)
 			}
 		}
 	}
-if (outype == 's')
-	{
-	for (line_index = 0; line_index < database_index - 1; line_index ++)	// print output
-		{
-		printf("%s\n", ssort_db [ssort_db [line_index].index].filepath);
-		}
-	}
 
 file_index = 0;
 db_index = 0;
 while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 	{
-	printf("FI=%d\tDI=%d\n", file_index, db_index);
 	if (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) < 0)
-		{
-		printf("FI=%d\t %s%s%s\t DI=%d\t %s\n", file_index, \
+		{		// Entry in file list is new
+		// db_new_offset
+		db_new_offset ++;
+		strcpy (ssort_db [database_index + db_new_offset - 2].sha, "NEW ENTRY");
+		strcpy (ssort_db [database_index + db_new_offset -2].filepath, fs_list [fs_list [file_index].index].filepath);
+		ssort_db [database_index + db_new_offset -2].index = database_index + db_new_offset - 2;
+		if (sfflags->verbose)
+			{
+			printf("FI=%d\t%s%s%s\tDI=%d\t%s\tDNO=%d\n", file_index, \
 						TEXT_ORANGE, fs_list [fs_list [file_index].index].filepath, TEXT_RESET, \
 						db_index, \
-						ssort_db [ssort_db [db_index].index].filepath);
+						ssort_db [ssort_db [db_index].index].filepath, db_new_offset);
+			}
 		file_index ++;
+		if (database_index + db_new_offset + 1 == database_alloc_size)		// check memory usage, reallocate
+			{
+			database_alloc_size += DATABASE_INCREMENT;
+			ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
+			}
 		}
 		else if (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) > 0)
-		{
-		printf("FI=%d\t %s\t DI=%d\t %s%s%s\n", file_index, \
+		{		// Entry in database has been deleted
+		ssort_db [ssort_db [db_index].index].sha [0] = 'X';
+		if (sfflags->verbose)
+			{
+			printf("FI=%d\t%s\tDI=%d\t%s%s%s\n", file_index, \
 						fs_list [fs_list [file_index].index].filepath, \
 						db_index, \
 						TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
+			}
 		db_index ++;
 		}
 	while (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
-		{
-		printf("FI=%d\t %s\t DI=%d\t %s\n", file_index, \
+		{		// No change between file list and database
+		// Anything?
+		if (sfflags->verbose)
+			{
+			printf("FI=%d\t%s\tDI=%d\t%s\n", file_index, \
 						fs_list [fs_list [file_index].index].filepath, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath);
+			}
 		file_index ++;
 		db_index ++;
 		}
-//	file_index ++;
 	}
-
-
+if (outype == 's')
+	{
+	for (line_index = 0; line_index < database_index + db_new_offset - 1; line_index ++)	// print output
+		{
+		printf("%s\t%s\t%d\n", ssort_db [line_index].sha, \
+					ssort_db [line_index].filepath, \
+					ssort_db [line_index].index);
+		}
+	}
 
 // Clean-up section
 chdir (C_W_D);
