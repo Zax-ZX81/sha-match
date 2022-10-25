@@ -8,15 +8,6 @@
  *                               *
  * * * * * * * * * * * * * * * * */
 
-/* * * * * * * * * * * * * * * * *
- *                               *
- *            TODO               *
- *                               *
- *    Update files changed       *
- *    since database built       *
- *                               *
- * * * * * * * * * * * * * * * * */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,7 +29,6 @@ struct sfind_flags sfflags [1] = {0};
 struct supdate_diff su_diff [1] = {0};
 struct dirent *dir_ents;
 struct stat file_stat;
-struct fs_list_entry *fs_list;
 struct filter_list_entry *filter_list;
 struct update_find_list_entry *uf_list;
 struct ufs_list_entry *ufs_list;
@@ -672,7 +662,7 @@ if (sfflags->progress == SW_ON)
 		{
 		exit_error ("Can't open database for output: ", database_out_filename);
 		}
-	printf ("# Writing updated database to: %s%s%s", TEXT_BLUE, database_out_filename, TEXT_RESET);
+	printf ("# Writing updated database to: %s%s%s\n", TEXT_BLUE, database_out_filename, TEXT_RESET);
 	for (line_index = 0; line_index < database_index + su_diff->add - 1 - su_diff->rem; line_index ++)	// write output
 		{
 		fprintf (DB_OUT_FP, "%s\t%s\t%s\n", ssort_db [ssort_db [line_index].index].sha, \
@@ -691,42 +681,3 @@ free (uf_list);
 uf_list = NULL;
 
 }
-/* Output section
-if (sfflags->std_out == SW_OFF)
-	{
-	SSDB_OUT_FP = fopen (database_filename, "w");		// open output database
-	if (SSDB_OUT_FP == NULL)
-		{
-		exit_error ("Can't open database for output: ", database_filename);
-		}
-	}
-for (line_index = 0; line_index < database_index; line_index ++)	// write/print output
-	{
-	if (sfflags->database_type == S2DB_TYPE)			// for S2DB output
-		{
-		if (sfflags->std_out)
-			{
-			printf("%s\t%s\t%s\n", sfind_db [sfind_db [line_index].index].sha, \
-						sfind_db [sfind_db [line_index].index].filepath, \
-						sfind_db [sfind_db [line_index].index].dataset);
-			}
-			else
-			{
-			fprintf(SSDB_OUT_FP, "%s\t%s\t%s\n", sfind_db [sfind_db [line_index].index].sha, \
-								sfind_db [sfind_db [line_index].index].filepath, \
-								sfind_db [sfind_db [line_index].index].dataset);
-			}
-		}
-		else		// for plain SHA256SUM output
-		{
-		if (sfflags->std_out)
-			{
-			printf("%s%s%s\n", sfind_db [sfind_db [line_index].index].sha, TWO_SPACES, sfind_db [sfind_db [line_index].index].filepath);
-			}
-			else
-			{
-			fprintf(SSDB_OUT_FP, "%s%s%s\n", sfind_db [sfind_db [line_index].index].sha, TWO_SPACES, sfind_db [sfind_db [line_index].index].filepath);
-			}
-		}
-	}
-*/
