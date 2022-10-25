@@ -129,7 +129,7 @@ if (SMDB_IN_FP == NULL)
 	exit_error ("Can't find Database: ", database_filename);
 	}
 
-chr_idx = strlen (searchlist_filename);
+chr_idx = strlen (searchlist_filename);				// derive dataset name from database filename
 while (searchlist_filename [chr_idx] != '.' && -- chr_idx);
 if (chr_idx)
 	{

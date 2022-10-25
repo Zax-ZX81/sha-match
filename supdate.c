@@ -41,9 +41,10 @@ struct sfind_flags sfflags [1] = {0};
 struct supdate_diff su_diff [1] = {0};
 struct dirent *dir_ents;
 struct stat file_stat;
-struct find_list_entry *find_list;
 struct fs_list_entry *fs_list;
 struct filter_list_entry *filter_list;
+struct update_find_list_entry *uf_list;
+struct ufs_list_entry *ufs_list;
 struct sha_sort_database *ssort_db;
 
 sfflags->filtering = FALSE;
@@ -72,6 +73,7 @@ int database_index = 0;				// number of lines in search list
 int file_index = 0;
 int db_index = 0;
 int chr_idx;
+int database_timestamp;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
@@ -153,7 +155,12 @@ if (DATABASE_FP == NULL)
 	exit_error ("Can't find Database: ", database_in_filename);
 	}
 
-chr_idx = strlen (database_in_filename);
+if (stat (database_in_filename, &file_stat) == 0)
+	{
+	database_timestamp = file_stat.st_mtime;		// get database timestamp
+	}
+
+chr_idx = strlen (database_in_filename);			// derive dataset name from database filename
 while (database_in_filename [chr_idx] != '.' && -- chr_idx);
 if (chr_idx)
 	{
@@ -231,7 +238,7 @@ if (sfflags->filtering)
 	}
 
 // Initial search section
-find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * DATABASE_INITIAL_SIZE);
+uf_list = (struct update_find_list_entry *) malloc (sizeof (struct update_find_list_entry) * DATABASE_INITIAL_SIZE);
 find_list_curr_size = DATABASE_INITIAL_SIZE;
 getcwd (C_W_D, FILEPATH_LENGTH);		// get present working directory
 strcat (C_W_D, SLASH_TERM);
@@ -243,31 +250,31 @@ if (DIR_PATH != NULL)
 		switch (dir_ents->d_type)
 			{
 			case FILE_TYPE:						// set type to file
-				find_list [find_list_write].object_type = T_FIL;
+				uf_list [find_list_write].object_type = T_FIL;
 				break;
 			case DIR_TYPE:						// set type to directory
-				find_list [find_list_write].object_type = T_DIR;
+				uf_list [find_list_write].object_type = T_DIR;
 				break;
 			default:						// mark as unneeded type
-				find_list [find_list_write].object_type = T_REJ;
+				uf_list [find_list_write].object_type = T_REJ;
 				break;
 			}
 		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
 			&& strcmp (dir_ents->d_name, database_in_filename)))
 			{						// Filter out ".", ".." and database file from search
-			find_list [find_list_write].object_type = T_REJ;
+			uf_list [find_list_write].object_type = T_REJ;
 			}
-		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
+		strcpy (uf_list [find_list_write].filepath, dir_ents->d_name);
 		if (sfflags->verbose)
 			{
 			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
-								find_list [find_list_write].object_type, \
+								uf_list [find_list_write].object_type, \
 								dir_ents->d_type, dir_ents->d_name);
 			}
 		if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
 			{
 			find_list_curr_size += DATABASE_INCREMENT;
-			find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
+			uf_list = (struct update_find_list_entry *) realloc (uf_list, sizeof (struct update_find_list_entry) * find_list_curr_size);
 			}
 		find_list_write ++;
 		}
@@ -282,10 +289,10 @@ if (DIR_PATH != NULL)
 while (find_list_read < find_list_write)
 	{
 	chdir (C_W_D);				// go back to the starting directory
-	if (find_list [find_list_read].object_type == T_DIR)
+	if (uf_list [find_list_read].object_type == T_DIR)
 		{
 		strcpy (path_sub, C_W_D);
-		strcat (path_sub, find_list [find_list_read].filepath);		// compose directory location for search
+		strcat (path_sub, uf_list [find_list_read].filepath);		// compose directory location for search
 		chdir (path_sub);						// move to search directory
 		DIR_PATH = opendir (path_sub);					// open directory
 		if (DIR_PATH != NULL)
@@ -295,32 +302,32 @@ while (find_list_read < find_list_write)
 				switch (dir_ents->d_type)
 					{
 					case FILE_TYPE:						// set type to file
-						find_list [find_list_write].object_type = FILE_ENTRY;
+						uf_list [find_list_write].object_type = FILE_ENTRY;
 						break;
 					case DIR_TYPE:						// set type to directory
-						find_list [find_list_write].object_type = DIR_ENTRY;
+						uf_list [find_list_write].object_type = DIR_ENTRY;
 						break;
 					default:						// mark as unneeded type
-						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
+						uf_list [find_list_write].object_type = UNKNOWN_ENTRY;
 						break;
 					}
 				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 					{
-					find_list [find_list_write].object_type = T_REJ;	// filter out "." and ".." from search
+					uf_list [find_list_write].object_type = T_REJ;	// filter out "." and ".." from search
 					}
-				strcpy (find_list [find_list_write].filepath, find_list [find_list_read].filepath);
-				strcat (find_list [find_list_write].filepath, "/");
-				strcat (find_list [find_list_write].filepath, dir_ents->d_name);
+				strcpy (uf_list [find_list_write].filepath, uf_list [find_list_read].filepath);
+				strcat (uf_list [find_list_write].filepath, "/");
+				strcat (uf_list [find_list_write].filepath, dir_ents->d_name);
 				if (find_list_write + 1 == find_list_curr_size)			// allocated more memory if needed
 					{
 					find_list_curr_size += DATABASE_INCREMENT;
-					find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
+					uf_list = (struct update_find_list_entry *) realloc (uf_list, sizeof (struct update_find_list_entry) * find_list_curr_size);
 					}
 				if (sfflags->verbose)
 					{
 					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
-									find_list [find_list_write].object_type, \
-									find_list [find_list_write].filepath);
+									uf_list [find_list_write].object_type, \
+									uf_list [find_list_write].filepath);
 					}
 				find_list_write ++;
 				}
@@ -335,20 +342,20 @@ while (find_list_read < find_list_write)
 	}
 
 // Find files in filelist with filter
-fs_list = (struct fs_list_entry *) malloc (sizeof (struct fs_list_entry) * DATABASE_INITIAL_SIZE);
+ufs_list = (struct ufs_list_entry *) malloc (sizeof (struct ufs_list_entry) * DATABASE_INITIAL_SIZE);
 fs_list_curr_size = DATABASE_INITIAL_SIZE;
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
 //printf (".");
-	find_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
+	uf_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
 	filter_match = TRUE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
 		{
-		find_list [find_list_read].filtered = FALSE;
+		uf_list [find_list_read].filtered = FALSE;
 		filter_match = FALSE;
 		for (filter_index = 0; filter_index < filter_line_count; filter_index ++)		// cycle through filter list
 			{
-			if (strcmp (filter_list [filter_index].filepath, find_list [find_list_read].filepath) == 0 && \
+			if (strcmp (filter_list [filter_index].filepath, uf_list [find_list_read].filepath) == 0 && \
 				filter_list [filter_index].object_type == T_FIL)			// match found
 				{
 				filter_match = TRUE;
@@ -357,7 +364,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				{
 				strcpy (dir_filter_test, filter_list [filter_index].filepath);
 				strcat (dir_filter_test, "/");
-				if (!strncmp (dir_filter_test, find_list [find_list_read].filepath, strlen (dir_filter_test)))	// match found
+				if (!strncmp (dir_filter_test, uf_list [find_list_read].filepath, strlen (dir_filter_test)))	// match found
 					{
 					filter_match = TRUE;
 					}
@@ -367,32 +374,42 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
 										find_list_read, \
 										filter_list [filter_index].filepath, \
-										find_list [find_list_read].filepath, filter_match, \
-										find_list [find_list_read].filtered);
+										uf_list [find_list_read].filepath, filter_match, \
+										uf_list [find_list_read].filtered);
 					}
 			}
 		if (sfflags->filtering == F_INCL && filter_match)		// output if match with inclusive filter
 			{
-			find_list [find_list_read].filtered = TRUE;
+			uf_list [find_list_read].filtered = TRUE;
 			}
 		if (sfflags->filtering == F_EXCL && !filter_match)		// output if no match with exclusive filter
 			{
-			find_list [find_list_read].filtered = TRUE;
+			uf_list [find_list_read].filtered = TRUE;
 			}
 		}
-	if (find_list [find_list_read].filtered)		// output matching line
+	if (uf_list [find_list_read].filtered)		// output matching line
 		{
-		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
+		if (uf_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
-			strcpy (fs_list [fs_list_index].filepath, find_list [find_list_read].filepath);
-			fs_list [fs_list_index].index = fs_list_index;
+			if (stat (uf_list [find_list_read].filepath, &file_stat) == 0)
+				{
+				if (file_stat.st_mode & S_IFREG)
+					{
+					uf_list [find_list_read].filesize = file_stat.st_size;	// get file size
+					uf_list [find_list_read].timestamp = file_stat.st_mtime;	// get file time stamp
+					}
+				}
+			strcpy (ufs_list [fs_list_index].filepath, uf_list [find_list_read].filepath);
+			ufs_list [fs_list_index].filesize = uf_list [fs_list_index].filesize;
+			ufs_list [fs_list_index].timestamp = uf_list [fs_list_index].timestamp;
+			ufs_list [fs_list_index].index = fs_list_index;
 			fs_list_index ++;
 			}
 		}
 	if (fs_list_index + 1 == fs_list_curr_size)		// allocated more memory if needed
 		{
 		fs_list_curr_size += DATABASE_INCREMENT;
-		fs_list = (struct fs_list_entry *) realloc (find_list, sizeof (struct fs_list_entry) * fs_list_curr_size);
+		ufs_list = (struct ufs_list_entry *) realloc (uf_list, sizeof (struct ufs_list_entry) * fs_list_curr_size);
 		}
 	}
 
@@ -440,11 +457,11 @@ while (swap_made == TRUE)
 	swap_made = FALSE;
 	for (line_index = 0; line_index < fs_list_index - 1; line_index ++)
 		{
-		if (strcmp (fs_list [fs_list [line_index].index].filepath, fs_list [fs_list [line_index + 1].index].filepath) > 0)
+		if (strcmp (ufs_list [ufs_list [line_index].index].filepath, ufs_list [ufs_list [line_index + 1].index].filepath) > 0)
 			{
-			swap_index = fs_list [line_index + 1].index;
-			fs_list [line_index + 1].index = fs_list [line_index].index;
-			fs_list [line_index].index = swap_index;
+			swap_index = ufs_list [line_index + 1].index;
+			ufs_list [line_index + 1].index = ufs_list [line_index].index;
+			ufs_list [line_index].index = swap_index;
 			swap_made = TRUE;
 			}
 		}
@@ -453,7 +470,7 @@ if (outype == 'f')
 	{
 	for (line_index = 0; line_index <= fs_list_index - 1; line_index ++) // print output
 		{
-		printf("%s\n", fs_list [fs_list [line_index].index].filepath);
+		printf("%s\n", ufs_list [ufs_list [line_index].index].filepath);
 		}
 	}
 
@@ -525,15 +542,13 @@ file_index = 0;
 db_index = 0;
 while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 	{
-	if (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) < 0)
+	if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) < 0)
 		{		// Entry in file list is new
 		su_diff->add ++;
-
 		strcpy (sha_command, SHA_CMD);				// compose command
-		strcat (sha_command, enquote (fs_list [fs_list [file_index].index].filepath));
+		strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
 		SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
 		fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
-
 		if (sha_verify (sha_line))				// verify SHA256SUM
 			{
 			strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
@@ -546,17 +561,16 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 				}
 			}
 			else
-			{
+			{	// FIX VVV verbose?
 			printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 			exit (1);
 			}
-
-		strcpy (ssort_db [database_index + su_diff->add - 2].filepath, fs_list [fs_list [file_index].index].filepath);
+		strcpy (ssort_db [database_index + su_diff->add - 2].filepath, ufs_list [ufs_list [file_index].index].filepath);
 		ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
 		if (sfflags->verbose)
 			{
 			printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
-						TEXT_ORANGE, fs_list [fs_list [file_index].index].filepath, TEXT_RESET, \
+						TEXT_ORANGE, ufs_list [ufs_list [file_index].index].filepath, TEXT_RESET, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
 			}
@@ -567,33 +581,34 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
 			}
 		}
-		else if (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) > 0)
+		else if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) > 0)
 		{		// Entry in database has been deleted
 		ssort_db [ssort_db [db_index].index].sha [0] = 'x';
 		su_diff->rem ++;
 		if (sfflags->verbose)
 			{
 			printf("FI=%d\t%s\tSDR=%d\tDI=%d\t%s%s%s\n", file_index, \
-						fs_list [fs_list [file_index].index].filepath, \
+						ufs_list [ufs_list [file_index].index].filepath, \
 						su_diff->rem, db_index, \
 						TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
 			}
 		db_index ++;
 		}
-	while (strcmp (fs_list [fs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
+	while (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
 		{		// No change between file list and database
 		su_diff->same ++;
 		if (sfflags->verbose)
 			{
-			printf("FI=%d\t%s\tDI=%d\t%s\tSDS=%d\n", file_index, \
-						fs_list [fs_list [file_index].index].filepath, \
+			printf("FI=%d\t%s\tDI=%d\t%s\tSDS=%d\t", file_index, \
+						ufs_list [ufs_list [file_index].index].filepath, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath, su_diff->same);
+			printf("TD=%d\n", ufs_list [ufs_list [file_index].index].timestamp - database_timestamp);
 			}
 		file_index ++;
 		db_index ++;
 		}
-	}
+	}			// database_timestamp
 
 // Database resort section
 for (line_index = 0; line_index < database_index + su_diff->add - 1; line_index ++)	// print output
@@ -633,7 +648,93 @@ chdir (C_W_D);
 
 //free (database_db);	// free memory
 //database_db = NULL;
-free (find_list);
-find_list = NULL;
+free (uf_list);
+uf_list = NULL;
 
 }
+/* * * * * * * * * * * * * * * * *
+ *                               *
+ *       ZList 0.51              *
+ *                               *
+ *       2022-10-22              *
+ *                               *
+ *       Zax                     *
+ *                               *
+
+int database_time;
+
+
+strcpy (database_name, argv [1]);
+printf ("%s\n", database_name);
+if (stat (database_name, &file_stat) == 0)
+	{
+	database_time = file_stat.st_mtime;		// get file size
+	}
+
+// Initial search section
+find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * DATABASE_INITIAL_SIZE);
+find_list_curr_size = DATABASE_INITIAL_SIZE;
+getcwd (C_W_D, FILEPATH_LENGTH);			// get present working directory
+strcat (C_W_D, SLASH_TERM);
+DIR_PATH = opendir (PATH_CURRENT);			// open directory
+if (DIR_PATH != NULL)
+	{
+	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
+		{
+		switch (dir_ents->d_type)
+			{
+			case FILE_TYPE:							// set type to file
+				find_list [find_list_write].object_type = T_FIL;
+				break;
+			case DIR_TYPE:							// set type to directory
+				find_list [find_list_write].object_type = T_DIR;
+				break;
+			default:							// mark as unneeded type
+				find_list [find_list_write].object_type = T_REJ;
+				break;
+			}
+		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
+			&& strcmp (dir_ents->d_name, database_filename)))
+			{						// Filter out ".", ".." and database file from search
+			find_list [find_list_write].object_type = T_REJ;
+			}
+		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
+		if (sfflags->verbose)
+			{
+			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+								find_list [find_list_write].object_type, \
+								dir_ents->d_type, dir_ents->d_name);
+			}
+		if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
+			{
+			find_list_curr_size += DATABASE_INCREMENT;
+			find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
+			}
+		find_list_write ++;
+		}
+	(void) closedir (DIR_PATH);
+	}
+	else
+	{
+	perror ("Couldn't open the directory");		// FIX
+	}
+
+// Database filepath load section
+for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
+	{
+	if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
+		{
+		if (stat (find_list [find_list_read].filepath, &file_stat) == 0)
+			{
+			if (file_stat.st_mode & S_IFREG)
+				{
+				printf ("%s\t%u\t%d\t%d\n", find_list [find_list_read].filepath, file_stat.st_size, file_stat.st_mtime, file_stat.st_mtime - database_time);
+				}
+			}
+		}
+	}
+
+chdir (C_W_D);		// go back to the starting directory
+
+}
+*/

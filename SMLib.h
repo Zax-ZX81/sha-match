@@ -169,6 +169,23 @@ struct filter_list_entry
 	char filepath [FILEPATH_LENGTH];
 	};
 
+struct update_find_list_entry
+	{
+	char object_type;
+	char filtered;
+	char filepath [FILEPATH_LENGTH];
+	unsigned long filesize;
+	int timestamp;
+	};
+
+struct ufs_list_entry
+	{
+	char filepath [FILEPATH_LENGTH];
+	unsigned long filesize;
+	int timestamp;
+	int index;
+	};
+
 struct hex_lookup_line		// hex lookup table line
 	{
 	char idx;		// hexadecimal character
