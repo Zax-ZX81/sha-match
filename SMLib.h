@@ -176,6 +176,13 @@ struct hex_lookup_line		// hex lookup table line
 	int last;		// last line of hex division
 	};
 
+struct supdate_diff
+	{
+	int same;		// number of lines unchanged
+	int rem;		// number of lines removed
+	int add;		// number of lines added
+	};
+
 struct shamatch_flags
 	{
 	char d_out;			// print results from database

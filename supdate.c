@@ -68,7 +68,6 @@ int database_ferr;				// database file error
 int database_index = 0;				// number of lines in search list
 int file_index = 0;
 int db_index = 0;
-int db_new_offset = 0;
 int chr_idx;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
