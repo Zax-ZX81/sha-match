@@ -590,6 +590,7 @@ for (line_index = 0; line_index < database_index; line_index ++)	// write/print 
 			}
 		}
 	}
+fclose (SSDB_OUT_FP);
 if (sfflags->std_out == SW_OFF)
 	{
 	printf ("%d lines written to %s%s%s\n", database_index, TEXT_BLUE, database_filename, TEXT_RESET);

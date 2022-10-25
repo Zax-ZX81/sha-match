@@ -15,9 +15,6 @@
  *    Update files changed       *
  *    since database built       *
  *                               *
- *    add upd to su_diff         *
- *    get file sizes and times   *
- *                               *
  * * * * * * * * * * * * * * * * */
 
 #include <stdio.h>
@@ -30,7 +27,7 @@
 #include "SMLib.h"
 
 #define PROG_VERSION "0.50"
-#define FILTER_PROG_NAME "ZFind"
+#define FILTER_PROG_NAME "SUpdate"
 
 char filter_line_check (char *filter_line);
 
@@ -52,7 +49,8 @@ sfflags->filtering = FALSE;
 FILE *SHA_PIPE;
 FILE *FILT_IN_FP;				// inclusion and exclusion filter list
 FILE *FILT_OUT_FP;
-FILE *DATABASE_FP;
+FILE *DB_IN_FP;
+FILE *DB_OUT_FP;
 DIR *DIR_PATH;
 
 int line_index;
@@ -76,6 +74,7 @@ int chr_idx;
 int database_timestamp;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
+char database_out_filename [FILEPATH_LENGTH] = "";	// input file name with extension
 char fileline [FILELINE_LENGTH] = "";			// holds line from filter file
 char switch_chr;
 char path_sub [FILEPATH_LENGTH];			// holds SHA256SUM file argument
@@ -100,35 +99,23 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch_chr = (int) argv [arg_no] [switch_pos];
 			switch (switch_chr)
 				{
-				case 'f':
-					outype = 'f';
-					break;
 				case 'i':
 					sfflags->filtering = F_INCL;
 					break;
-				case 'n':
-					sfflags->progress = SW_OFF;
-					break;
-				case 'o':
-					sfflags->database_type = SHA256_TYPE;
-					break;
-				case 's':
-					outype = 's';
-					break;
-				case 'u':
-					sfflags->sort = SORT_NONE;
+				case 'U':
+					sfflags->progress = SW_ON;
 					break;
 				case 'v':
 					sfflags->verbose = SW_ON;
 					break;
 				case 'V':
-					printf ("SHA Find version %s\n", PROG_VERSION);
+					printf ("SHA Update version %s\n", PROG_VERSION);
 					exit (0);
 				case 'x':
 					sfflags->filtering = F_EXCL;
 					break;
 				default:
-					exit_error ("# SHA find [-finosuvVx] <search file> <database file>","");
+					exit_error ("# SHA Update [-iUvVx] <database file>","");
 					break;
 				}	// END switch
 			}	// END for switch_pos
@@ -149,8 +136,8 @@ if (sfflags->filtering > 0)
 		}
 	}
 
-DATABASE_FP = fopen (database_in_filename, "r");
-if (DATABASE_FP == NULL)
+DB_IN_FP = fopen (database_in_filename, "r");
+if (DB_IN_FP == NULL)
 	{
 	exit_error ("Can't find Database: ", database_in_filename);
 	}
@@ -178,10 +165,7 @@ if (sfflags->filtering)
 	{
 	filter_list = (struct filter_list_entry *) malloc (sizeof (struct filter_list_entry) * FILTER_INITIAL_SIZE);
 	filter_curr_size = FILTER_INITIAL_SIZE;
-	if (sfflags->std_out == SW_OFF)
-		{
-		printf ("# Loading filter...");
-		}
+	printf ("# Loading filter...");
 	do
 		{
 		filter_ferr = (long)fgets (fileline, FILEPATH_LENGTH, FILT_IN_FP);
@@ -231,10 +215,7 @@ if (sfflags->filtering)
 		filter_index ++;
 		} while (!feof (FILT_IN_FP));
 	filter_line_count = filter_index - 1;
-	if (sfflags->std_out == SW_OFF)
-		{
-		printf (" %d lines added.\n", filter_line_count);
-		}
+	printf (" %d lines added.\n", filter_line_count);
 	}
 
 // Initial search section
@@ -285,6 +266,7 @@ if (DIR_PATH != NULL)
 	perror ("Couldn't open the directory");		// FIX
 	}
 
+printf ("Searching files...\n");
 // Feedback search section
 while (find_list_read < find_list_write)
 	{
@@ -340,13 +322,17 @@ while (find_list_read < find_list_write)
 		}
 	find_list_read ++;
 	}
+printf ("%d entries found.\n", find_list_write);
 
 // Find files in filelist with filter
 ufs_list = (struct ufs_list_entry *) malloc (sizeof (struct ufs_list_entry) * DATABASE_INITIAL_SIZE);
 fs_list_curr_size = DATABASE_INITIAL_SIZE;
+	if (sfflags->filtering > 0)				// are we applying filtering?
+		{
+		printf ("Filtering...\n");
+		}
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
-//printf (".");
 	uf_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
 	filter_match = TRUE;
 	if (sfflags->filtering > 0)				// are we applying filtering?
@@ -395,13 +381,14 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				{
 				if (file_stat.st_mode & S_IFREG)
 					{
-					uf_list [find_list_read].filesize = file_stat.st_size;	// get file size
+					uf_list [find_list_read].filesize = file_stat.st_size;		// get file size
 					uf_list [find_list_read].timestamp = file_stat.st_mtime;	// get file time stamp
+//					printf ("@@@ %s\t%d\t%d\n", uf_list [find_list_read].filepath, uf_list [find_list_read].filesize, uf_list [find_list_read].timestamp);
 					}
 				}
 			strcpy (ufs_list [fs_list_index].filepath, uf_list [find_list_read].filepath);
-			ufs_list [fs_list_index].filesize = uf_list [fs_list_index].filesize;
-			ufs_list [fs_list_index].timestamp = uf_list [fs_list_index].timestamp;
+			ufs_list [fs_list_index].filesize = uf_list [find_list_read].filesize;
+			ufs_list [fs_list_index].timestamp = uf_list [find_list_read].timestamp;
 			ufs_list [fs_list_index].index = fs_list_index;
 			fs_list_index ++;
 			}
@@ -412,7 +399,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		ufs_list = (struct ufs_list_entry *) realloc (uf_list, sizeof (struct ufs_list_entry) * fs_list_curr_size);
 		}
 	}
-
+printf ("%d files added\n", fs_list_index);
 
 // Output verified filter section
 if (sfflags->filtering)
@@ -442,16 +429,13 @@ if (sfflags->filtering)
 		}
 	fclose (FILT_OUT_FP);
 	free (filter_list);
-	if (sfflags->std_out == SW_OFF)
-		{
-		printf ("%d files added.\n", filter_index);
-		}
 	}
 
 chdir (C_W_D);		// go back to the starting directory
 
 
 // Sort filelist
+printf ("Sorting file list...\n");
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
@@ -475,10 +459,11 @@ if (outype == 'f')
 	}
 
 // Database load section
+printf ("Loading database...\n");
 ssort_db = (struct sha_sort_database *) malloc (sizeof (struct sha_sort_database) * database_alloc_size);
 do
 	{
-	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DATABASE_FP);
+	database_ferr = (long)fgets (fileline, FILEPATH_LENGTH, DB_IN_FP);
 	if (database_index == 0)
 		{
 		database_type = sha_verify (fileline);
@@ -516,10 +501,11 @@ do
 		ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
 		}
 	database_index ++;
-	} while (!feof (DATABASE_FP));
-fclose (DATABASE_FP);
+	} while (!feof (DB_IN_FP));
+fclose (DB_IN_FP);
 
 // Database sort section
+printf ("Sorting database...\n");
 swap_made = TRUE;
 while (swap_made == TRUE)
 	{
@@ -538,12 +524,14 @@ while (swap_made == TRUE)
 
 // Search section
 //					Add progress indicator
+printf ("Searching for changes...\n");
 file_index = 0;
 db_index = 0;
 while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 	{
 	if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) < 0)
 		{		// Entry in file list is new
+		printf ("Calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
 		su_diff->add ++;
 		strcpy (sha_command, SHA_CMD);				// compose command
 		strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
@@ -552,7 +540,6 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 		if (sha_verify (sha_line))				// verify SHA256SUM
 			{
 			strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
-			fclose (SHA_PIPE);
 			ssort_db [database_index + su_diff->add - 2].sha [SHA_LENGTH] = NULL_TERM;
 			strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 			if (sfflags->verbose)
@@ -565,6 +552,7 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 			exit (1);
 			}
+		fclose (SHA_PIPE);
 		strcpy (ssort_db [database_index + su_diff->add - 2].filepath, ufs_list [ufs_list [file_index].index].filepath);
 		ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
 		if (sfflags->verbose)
@@ -596,21 +584,63 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 		}
 	while (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
 		{		// No change between file list and database
-		su_diff->same ++;
+		if (ufs_list [ufs_list [file_index].index].timestamp > database_timestamp)	// File has newer filestamp
+			{
+			printf ("Re-calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
+			su_diff->upd ++;
+			ssort_db [ssort_db [db_index].index].sha [0] = 'x';
+			su_diff->rem ++;
+			strcpy (sha_command, SHA_CMD);				// compose command
+			strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
+			SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
+			fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+			if (sha_verify (sha_line))				// verify SHA256SUM
+				{
+				strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
+				ssort_db [database_index + su_diff->add - 2].sha [SHA_LENGTH] = NULL_TERM;
+				strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
+				if (sfflags->verbose)
+					{
+					printf ("# %s\n", sha_line);
+					}
+				}
+				else
+				{	// FIX VVV verbose?
+				printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
+				exit (1);
+				}
+			fclose (SHA_PIPE);
+			strcpy (ssort_db [database_index + su_diff->add - 2].filepath, ufs_list [ufs_list [file_index].index].filepath);
+			ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
+			if (sfflags->verbose)
+				{
+				printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
+							TEXT_ORANGE, ufs_list [ufs_list [file_index].index].filepath, TEXT_RESET, \
+							db_index, \
+							ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
+				}
+			}
+			else		// No change to database entry
+			{
+			su_diff->same ++;
+			}
 		if (sfflags->verbose)
 			{
 			printf("FI=%d\t%s\tDI=%d\t%s\tSDS=%d\t", file_index, \
 						ufs_list [ufs_list [file_index].index].filepath, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath, su_diff->same);
-			printf("TD=%d\n", ufs_list [ufs_list [file_index].index].timestamp - database_timestamp);
+			printf("FS=%d\tFT=%d\tDT=%d\tTD=%d\n", ufs_list [ufs_list [file_index].index].filesize, \
+								ufs_list [ufs_list [file_index].index].timestamp, \
+								database_timestamp, ufs_list [ufs_list [file_index].index].timestamp - database_timestamp);
 			}
 		file_index ++;
 		db_index ++;
 		}
 	}			// database_timestamp
 
-// Database resort section
+// Database re-sort section
+printf ("\nRe-sorting database...\n");
 for (line_index = 0; line_index < database_index + su_diff->add - 1; line_index ++)	// print output
 	{
 	ssort_db [line_index].index = line_index;
@@ -630,18 +660,27 @@ while (swap_made == TRUE)
 			}
 		}
 	}
-
-if (outype == 's')
+printf ("# %s%s%s: %s\t%d entries added, %d entries removed, %d entries updated, %d entries unchanged%s\n", \
+									TEXT_BLUE, dataset_name, TEXT_RESET, TEXT_YELLOW, \
+									su_diff->add, su_diff->rem - su_diff->upd, su_diff->upd, su_diff->same, TEXT_RESET);
+if (sfflags->progress == SW_ON)
 	{
-	for (line_index = 0; line_index < database_index + su_diff->add - 1 - su_diff->rem; line_index ++)	// print output
+	strcpy (database_out_filename, dataset_name);
+	strcat (database_out_filename, "-U.s2db");
+	DB_OUT_FP = fopen (database_out_filename, "w");		// open output database
+	if (DB_OUT_FP == NULL)
 		{
-		printf("%s\t%s\t%d\n", ssort_db [ssort_db [line_index].index].sha, \
-					ssort_db [ssort_db [line_index].index].filepath, \
-					ssort_db [ssort_db [line_index].index].index);
+		exit_error ("Can't open database for output: ", database_out_filename);
 		}
+	printf ("# Writing updated database to: %s%s%s", TEXT_BLUE, database_out_filename, TEXT_RESET);
+	for (line_index = 0; line_index < database_index + su_diff->add - 1 - su_diff->rem; line_index ++)	// write output
+		{
+		fprintf (DB_OUT_FP, "%s\t%s\t%s\n", ssort_db [ssort_db [line_index].index].sha, \
+					ssort_db [ssort_db [line_index].index].filepath, \
+					dataset_name);
+		}
+	fclose (DB_OUT_FP);
 	}
-
-printf("# %s%s%s: %s\t%d entries added, %d entries removed, %d entries unchanged%s\n", TEXT_BLUE, dataset_name, TEXT_RESET, TEXT_YELLOW, su_diff->add, su_diff->rem, su_diff->same, TEXT_RESET);
 
 // Clean-up section
 chdir (C_W_D);
@@ -652,89 +691,42 @@ free (uf_list);
 uf_list = NULL;
 
 }
-/* * * * * * * * * * * * * * * * *
- *                               *
- *       ZList 0.51              *
- *                               *
- *       2022-10-22              *
- *                               *
- *       Zax                     *
- *                               *
-
-int database_time;
-
-
-strcpy (database_name, argv [1]);
-printf ("%s\n", database_name);
-if (stat (database_name, &file_stat) == 0)
+/* Output section
+if (sfflags->std_out == SW_OFF)
 	{
-	database_time = file_stat.st_mtime;		// get file size
-	}
-
-// Initial search section
-find_list = (struct find_list_entry *) malloc (sizeof (struct find_list_entry) * DATABASE_INITIAL_SIZE);
-find_list_curr_size = DATABASE_INITIAL_SIZE;
-getcwd (C_W_D, FILEPATH_LENGTH);			// get present working directory
-strcat (C_W_D, SLASH_TERM);
-DIR_PATH = opendir (PATH_CURRENT);			// open directory
-if (DIR_PATH != NULL)
-	{
-	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
+	SSDB_OUT_FP = fopen (database_filename, "w");		// open output database
+	if (SSDB_OUT_FP == NULL)
 		{
-		switch (dir_ents->d_type)
-			{
-			case FILE_TYPE:							// set type to file
-				find_list [find_list_write].object_type = T_FIL;
-				break;
-			case DIR_TYPE:							// set type to directory
-				find_list [find_list_write].object_type = T_DIR;
-				break;
-			default:							// mark as unneeded type
-				find_list [find_list_write].object_type = T_REJ;
-				break;
-			}
-		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
-			&& strcmp (dir_ents->d_name, database_filename)))
-			{						// Filter out ".", ".." and database file from search
-			find_list [find_list_write].object_type = T_REJ;
-			}
-		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
-		if (sfflags->verbose)
-			{
-			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
-								find_list [find_list_write].object_type, \
-								dir_ents->d_type, dir_ents->d_name);
-			}
-		if (find_list_write + 1 == find_list_curr_size)		// allocated more memory if needed
-			{
-			find_list_curr_size += DATABASE_INCREMENT;
-			find_list = (struct find_list_entry *) realloc (find_list, sizeof (struct find_list_entry) * find_list_curr_size);
-			}
-		find_list_write ++;
+		exit_error ("Can't open database for output: ", database_filename);
 		}
-	(void) closedir (DIR_PATH);
 	}
-	else
+for (line_index = 0; line_index < database_index; line_index ++)	// write/print output
 	{
-	perror ("Couldn't open the directory");		// FIX
-	}
-
-// Database filepath load section
-for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
-	{
-	if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
+	if (sfflags->database_type == S2DB_TYPE)			// for S2DB output
 		{
-		if (stat (find_list [find_list_read].filepath, &file_stat) == 0)
+		if (sfflags->std_out)
 			{
-			if (file_stat.st_mode & S_IFREG)
-				{
-				printf ("%s\t%u\t%d\t%d\n", find_list [find_list_read].filepath, file_stat.st_size, file_stat.st_mtime, file_stat.st_mtime - database_time);
-				}
+			printf("%s\t%s\t%s\n", sfind_db [sfind_db [line_index].index].sha, \
+						sfind_db [sfind_db [line_index].index].filepath, \
+						sfind_db [sfind_db [line_index].index].dataset);
+			}
+			else
+			{
+			fprintf(SSDB_OUT_FP, "%s\t%s\t%s\n", sfind_db [sfind_db [line_index].index].sha, \
+								sfind_db [sfind_db [line_index].index].filepath, \
+								sfind_db [sfind_db [line_index].index].dataset);
+			}
+		}
+		else		// for plain SHA256SUM output
+		{
+		if (sfflags->std_out)
+			{
+			printf("%s%s%s\n", sfind_db [sfind_db [line_index].index].sha, TWO_SPACES, sfind_db [sfind_db [line_index].index].filepath);
+			}
+			else
+			{
+			fprintf(SSDB_OUT_FP, "%s%s%s\n", sfind_db [sfind_db [line_index].index].sha, TWO_SPACES, sfind_db [sfind_db [line_index].index].filepath);
 			}
 		}
 	}
-
-chdir (C_W_D);		// go back to the starting directory
-
-}
 */

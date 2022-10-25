@@ -196,6 +196,7 @@ struct hex_lookup_line		// hex lookup table line
 struct supdate_diff
 	{
 	int same;		// number of lines unchanged
+	int upd;		// number of lines updated
 	int rem;		// number of lines removed
 	int add;		// number of lines added
 	};
