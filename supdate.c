@@ -12,8 +12,11 @@
  *                               *
  *            TODO               *
  *                               *
- *     Update files changed      *
- *     since database built      *
+ *    Update files changed       *
+ *    since database built       *
+ *                               *
+ *    add upd to su_diff         *
+ *    get file sizes and times   *
  *                               *
  * * * * * * * * * * * * * * * * */
 

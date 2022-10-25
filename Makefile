@@ -23,6 +23,9 @@ sdup: sdup.c SMLib.c
 ssort: ssort.c SMLib.c
 	$(CC) -o bin/ssort ssort.c SMLib.c $(CFLAGS)
 
+zlist: zlist.c SMLib.c
+	$(CC) -o bin/zlist zlist.c SMLib.c $(CFLAGS)
+
 supdate: supdate.c SMLib.c
 	$(CC) -o bin/supdate supdate.c SMLib.c $(CFLAGS)
 
