@@ -91,6 +91,9 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch_chr = (int) argv [arg_no] [switch_pos];
 			switch (switch_chr)
 				{
+				case 'd':
+					suflags->show_del = SW_ON;
+					break;
 				case 'f':
 					suflags->force = SW_ON;
 					break;
@@ -527,69 +530,9 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 	if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) < 0)
 		{		// Entry in file list is new
 		su_diff->add ++;
-if (suflags->verbose || suflags->update)
-	{
-		printf ("# Calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
-		strcpy (sha_command, SHA_CMD);				// compose command
-		strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
-		SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
-		fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
-		if (sha_verify (sha_line))				// verify SHA256SUM
-			{
-			strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
-			ssort_db [database_index + su_diff->add - 2].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
-			if (suflags->verbose)
-				{
-				printf ("# %s\n", sha_line);
-				}
-			}
-			else
-			{	// FIX VVV verbose?
-			printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
-			exit (1);
-			}
-		fclose (SHA_PIPE);
-		strcpy (ssort_db [database_index + su_diff->add - 2].filepath, ufs_list [ufs_list [file_index].index].filepath);
-		ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
-		if (suflags->verbose)
-			{
-			printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
-						TEXT_ORANGE, ufs_list [ufs_list [file_index].index].filepath, TEXT_RESET, \
-						db_index, \
-						ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
-			}
-	}
-		file_index ++;
-		if (database_index + su_diff->add + 1 == database_alloc_size)		// check memory usage, reallocate
-			{
-			database_alloc_size += DATABASE_INCREMENT;
-			ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
-			}
-		}
-		else if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) > 0)
-		{		// Entry in database has been deleted
-		ssort_db [ssort_db [db_index].index].sha [0] = 'x';
-		su_diff->rem ++;
-		if (suflags->verbose)
-			{
-			printf("FI=%d\t%s\tSDR=%d\tDI=%d\t%s%s%s\n", file_index, \
-						ufs_list [ufs_list [file_index].index].filepath, \
-						su_diff->rem, db_index, \
-						TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
-			}
-		db_index ++;
-		}
-	while (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
-		{		// No change between file list and database
-		if (ufs_list [ufs_list [file_index].index].timestamp > database_timestamp)	// File has newer filestamp
-			{
-			su_diff->upd ++;
-			ssort_db [ssort_db [db_index].index].sha [0] = 'x';
-			su_diff->rem ++;
-if (suflags->verbose || suflags->update)
-	{
-			printf ("# Re-calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
+		if (suflags->verbose || suflags->update)
+			{	//Start verbose
+			printf ("#    Calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
 			strcpy (sha_command, SHA_CMD);				// compose command
 			strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
 			SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
@@ -601,7 +544,7 @@ if (suflags->verbose || suflags->update)
 				strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 				if (suflags->verbose)
 					{
-					printf ("SHA=%s\n", sha_line);
+					printf ("# %s\n", sha_line);
 					}
 				}
 				else
@@ -619,7 +562,74 @@ if (suflags->verbose || suflags->update)
 							db_index, \
 							ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
 				}
-	}
+			}	// End verbose
+		file_index ++;
+		if (database_index + su_diff->add + 1 == database_alloc_size)		// check memory usage, reallocate
+			{
+			database_alloc_size += DATABASE_INCREMENT;
+			ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
+			}
+		}	//End new entry
+		else
+		{
+		if (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) > 0)
+			{		// Entry in database has been deleted
+			ssort_db [ssort_db [db_index].index].sha [0] = 'x';
+			if (suflags->verbose || suflags->update || suflags->show_del)
+				{
+				printf ("%s# Deleting database entry for %s%s\n", TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
+				}
+			su_diff->rem ++;
+			if (suflags->verbose)
+				{
+				printf("FI=%d\t%s\tSDR=%d\tDI=%d\t%s%s%s\n", file_index, \
+							ufs_list [ufs_list [file_index].index].filepath, \
+							su_diff->rem, db_index, \
+							TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
+				}
+			db_index ++;
+			}
+		}
+	while (strcmp (ufs_list [ufs_list [file_index].index].filepath, ssort_db [ssort_db [db_index].index].filepath) == 0)
+		{		// No change between file list and database
+		if (ufs_list [ufs_list [file_index].index].timestamp > database_timestamp)	// File has newer filestamp
+			{
+			su_diff->upd ++;
+			ssort_db [ssort_db [db_index].index].sha [0] = 'x';
+			su_diff->rem ++;
+			if (suflags->verbose || suflags->update)
+				{
+				printf ("# Re-calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
+				strcpy (sha_command, SHA_CMD);				// compose command
+				strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
+				SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
+				fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+				if (sha_verify (sha_line))				// verify SHA256SUM
+					{
+					strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
+					ssort_db [database_index + su_diff->add - 2].sha [SHA_LENGTH] = NULL_TERM;
+					strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
+					if (suflags->verbose)
+						{
+						printf ("SHA=%s\n", sha_line);
+						}
+					}
+					else
+					{	// FIX VVV verbose?
+					printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
+					exit (1);
+					}
+				fclose (SHA_PIPE);
+				strcpy (ssort_db [database_index + su_diff->add - 2].filepath, ufs_list [ufs_list [file_index].index].filepath);
+				ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
+				if (suflags->verbose)
+					{
+					printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
+								TEXT_ORANGE, ufs_list [ufs_list [file_index].index].filepath, TEXT_RESET, \
+								db_index, \
+								ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
+					}
+				}
 			}
 			else		// No change to database entry
 			{
@@ -638,7 +648,7 @@ if (suflags->verbose || suflags->update)
 		file_index ++;
 		db_index ++;
 		}
-	}			// database_timestamp
+	}
 
 // Database re-sort section
 if (suflags->verbose || suflags->update)

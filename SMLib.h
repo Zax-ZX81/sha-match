@@ -235,6 +235,7 @@ struct sfind_flags
 
 struct supdate_flags
 	{
+	char show_del;			// read filter file
 	char filtering;			// read filter file
 	char force;			// force update
 	char update;			// perform update
