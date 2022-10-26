@@ -1,5 +1,5 @@
 ## Sha-match
-A simple system for cataloguing and managing files using _SHA256_.
+A system for cataloguing and managing files using _SHA256_.
 
 ### Synopsis
 
