@@ -7,6 +7,8 @@ __smatch__ [dimV] _searchlist database_
 
 __sfind__ [finosuvVx] _dataset_
 
+__supdate__ [dfiUvVx] _dataset_
+
 __sdup__ [dfFlLmuVz] _dataset_
 
 __scheck__ [V] _search-file_ [-d _database-file_]
