@@ -22,7 +22,7 @@ __smatch__ compares two ___dataset___ files - a _searchlist_ and a _database_, p
 
 __sfind__ generates a ___dataset___ for the current directory.
 
-__supdate__ generates an update to ___dataset___ for the current directory, without recalculating all checksums.
+__supdate__ generates an update to a ___dataset___ for the current directory, without recalculating all checksums.
 
 __sdup__ searches for duplicate files within a ___dataset___.
 
