@@ -198,7 +198,7 @@ if (sfflags->filtering)
 				}
 			if (sfflags->verbose)
 				{
-				printf ("F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
+				fprintf (stderr, "F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
 								filter_list [filter_index].object_type, \
 								filter_list [filter_index].filepath);
 				}
@@ -253,7 +253,7 @@ if (DIR_PATH != NULL)
 		strcpy (find_list [find_list_write].filepath, dir_ents->d_name);
 		if (sfflags->verbose)
 			{
-			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+			fprintf (stderr, "FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
 								find_list [find_list_write].object_type, \
 								dir_ents->d_type, dir_ents->d_name);
 			}
@@ -311,7 +311,7 @@ while (find_list_read < find_list_write)
 					}
 				if (sfflags->verbose)
 					{
-					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
+					fprintf (stderr, "FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
 									find_list [find_list_write].object_type, \
 									find_list [find_list_write].filepath);
 					}
@@ -363,7 +363,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				}
 				if (sfflags->verbose)
 					{
-					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
+					fprintf (stderr, "DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
 										find_list_read, \
 										filter_list [filter_index].filepath, \
 										find_list [find_list_read].filepath, filter_match, \
@@ -417,7 +417,7 @@ if (sfflags->filtering)
 		{
 		if (sfflags->verbose)
 			{
-			printf ("OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
+			fprintf (stderr, "OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
 							filter_list [filter_index].object_type, \
 							filter_list [filter_index].filepath);
 			}
@@ -460,7 +460,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 		}
 	if (sfflags->verbose)
 		{
-		printf ("FST=%u\tFSM=%f\tFS=%u\tFP=%6.2f\n", file_size_total, file_size_mult, \
+		fprintf (stderr, "FST=%u\tFSM=%f\tFS=%u\tFP=%6.2f\n", file_size_total, file_size_mult, \
 							sfind_db [line_index].filesize, file_progress);
 		}
 
@@ -493,7 +493,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 		strcpy (sfind_db [line_index].dataset, database_dataset);
 		if (sfflags->verbose)
 			{
-			printf ("Size=%u\t%s\n", sfind_db [line_index].filesize, sha_line);
+			fprintf (stderr, "Size=%u\t%s\n", sfind_db [line_index].filesize, sha_line);
 			}
 		}
 		else

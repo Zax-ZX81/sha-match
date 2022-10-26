@@ -14,7 +14,7 @@
 
 void exit_error (char *message_a, char *message_b)	// Print two strings as error messages in orange
 {
-printf ("%s%s%s%s\n", TEXT_ORANGE, message_a, message_b, TEXT_RESET);
+fprintf (stderr, "%s%s%s%s\n", TEXT_ORANGE, message_a, message_b, TEXT_RESET);
 exit (1);
 }
 

@@ -20,14 +20,8 @@ scheck: scheck.c SMLib.c
 sdup: sdup.c SMLib.c
 	$(CC) -o bin/sdup sdup.c SMLib.c $(CFLAGS)
 
-ssort: ssort.c SMLib.c
-	$(CC) -o bin/ssort ssort.c SMLib.c $(CFLAGS)
-
-zlist: zlist.c SMLib.c
-	$(CC) -o bin/zlist zlist.c SMLib.c $(CFLAGS)
-
 supdate: supdate.c SMLib.c
 	$(CC) -o bin/supdate supdate.c SMLib.c $(CFLAGS)
 
 install:
-	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup bin/ssort bin/supdate sha-match.1 ~/bin/
+	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup bin/supdate sha-match.1 ~/bin/

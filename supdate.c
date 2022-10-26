@@ -199,7 +199,7 @@ if (suflags->filtering)
 				}
 			if (suflags->verbose)
 				{
-				printf ("F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
+				fprintf (stderr, "F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
 								filter_list [filter_index].object_type, \
 								filter_list [filter_index].filepath);
 				}
@@ -245,7 +245,7 @@ if (DIR_PATH != NULL)
 		strcpy (ufind_list [find_list_write].filepath, dir_ents->d_name);
 		if (suflags->verbose)
 			{
-			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+			fprintf (stderr, "FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
 								ufind_list [find_list_write].object_type, \
 								dir_ents->d_type, dir_ents->d_name);
 			}
@@ -304,7 +304,7 @@ while (find_list_read < find_list_write)
 					}
 				if (suflags->verbose)
 					{
-					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
+					fprintf (stderr, "FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
 									ufind_list [find_list_write].object_type, \
 									ufind_list [find_list_write].filepath);
 					}
@@ -355,7 +355,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				}
 				if (suflags->verbose)
 					{
-					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
+					fprintf (stderr, "DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
 										find_list_read, \
 										filter_list [filter_index].filepath, \
 										ufind_list [find_list_read].filepath, filter_match, \
@@ -392,7 +392,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		}
 	if (suflags->verbose)
 		{
-		printf ("FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%d\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
+		fprintf (stderr, "FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%d\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
 									ufind_list [find_list_read].filepath, \
 									ufind_list [find_list_read].filesize, \
 									ufind_list [find_list_read].timestamp);
@@ -418,7 +418,7 @@ if (suflags->filtering && (suflags->verbose || suflags->update))
 		{
 		if (suflags->verbose)
 			{
-			printf ("OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
+			fprintf (stderr, "OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
 							filter_list [filter_index].object_type, \
 							filter_list [filter_index].filepath);
 			}
@@ -486,7 +486,7 @@ do
 		ssort_db [database_index].index = database_index;	// load sort index in start position
 		if (suflags->verbose)
 			{
-			printf ("SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [database_index].sha, \
+			fprintf (stderr, "SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [database_index].sha, \
 							ssort_db [database_index].filepath, \
 							ssort_db [database_index].dataset, \
 							ssort_db [database_index].index);
@@ -543,12 +543,12 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 				strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 				if (suflags->verbose)
 					{
-					printf ("# %s\n", sha_line);
+					fprintf (stderr, "# %s\n", sha_line);
 					}
 				}
 				else
 				{	// FIX VVV verbose?
-				printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
+				fprintf (stderr, "Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 				exit (1);
 				}
 			fclose (SHA_PIPE);
@@ -610,12 +610,12 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 					strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 					if (suflags->verbose)
 						{
-						printf ("SHA=%s\n", sha_line);
+						fprintf (stderr, "SHA=%s\n", sha_line);
 						}
 					}
 					else
 					{	// FIX VVV verbose?
-					printf ("Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
+					fprintf (stderr, "Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 					exit (1);
 					}
 				fclose (SHA_PIPE);
