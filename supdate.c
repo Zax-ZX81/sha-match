@@ -112,7 +112,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					suflags->filtering = F_EXCL;
 					break;
 				default:
-					exit_error ("# SHA Update [-iUvVx] <database file>","");
+					exit_error ("# SHA Update [-dfiUvVx] <database file>","");
 					break;
 				}	// END switch
 			}	// END for switch_pos
