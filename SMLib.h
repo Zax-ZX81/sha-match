@@ -42,6 +42,7 @@
 #define DATABASE_CEILING 262144
 #define DATABASE_INCREMENT 4096
 #define DATABASE_INITIAL_SIZE 4096
+/*#define DATABASE_INITIAL_SIZE 16384*/
 #define DATASET_LENGTH 32
 #define FILEPATH_LENGTH 1024
 #define FILELINE_LENGTH 2048
@@ -182,7 +183,7 @@ struct update_find_list_entry
 	int timestamp;
 	};
 
-struct ufs_list_entry
+struct uf_sort_list_entry
 	{
 	char filepath [FILEPATH_LENGTH];
 	unsigned long filesize;
