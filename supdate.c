@@ -62,7 +62,7 @@ int file_index = 0;
 int db_index = 0;
 int chr_idx;
 int database_timestamp;
-
+int remove_perc, retain_perc;
 double change_factor;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
@@ -91,6 +91,9 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 			switch_chr = (int) argv [arg_no] [switch_pos];
 			switch (switch_chr)
 				{
+				case 'f':
+					suflags->force = SW_ON;
+					break;
 				case 'i':
 					suflags->filtering = F_INCL;
 					break;
@@ -207,7 +210,7 @@ if (suflags->filtering)
 		filter_index ++;
 		} while (!feof (FILT_IN_FP));
 	filter_line_count = filter_index - 1;
-	printf (" %d lines added.\n", filter_line_count);
+	printf ("# %d lines added.\n", filter_line_count);
 	}
 
 // Initial search section
@@ -258,7 +261,7 @@ if (DIR_PATH != NULL)
 	perror ("Couldn't open the directory");		// FIX
 	}
 
-printf ("Searching files...\n");
+printf ("# Searching files...\n");
 // Feedback search section
 while (find_list_read < find_list_write)
 	{
@@ -314,14 +317,14 @@ while (find_list_read < find_list_write)
 		}
 	find_list_read ++;
 	}
-printf ("%d entries found.\n", find_list_write);
+printf ("# %d entries found\n", find_list_write);
 
 // Find files in filelist with filter
 ufs_list = (struct ufs_list_entry *) malloc (sizeof (struct ufs_list_entry) * DATABASE_INITIAL_SIZE);
 fs_list_curr_size = DATABASE_INITIAL_SIZE;
 	if (suflags->filtering > 0)				// are we applying filtering?
 		{
-		printf ("Filtering...\n");
+		printf ("# Filtering...\n");
 		}
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
@@ -391,7 +394,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		ufs_list = (struct ufs_list_entry *) realloc (uf_list, sizeof (struct ufs_list_entry) * fs_list_curr_size);
 		}
 	}
-printf ("%d files added\n", fs_list_index);
+printf ("# %d files added\n", fs_list_index);
 
 // Output verified filter section
 if (suflags->filtering && (suflags->verbose || suflags->update))
@@ -427,7 +430,7 @@ chdir (C_W_D);		// go back to the starting directory
 
 
 // Sort filelist
-printf ("Sorting file list...\n");
+printf ("# Sorting file list...\n");
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
@@ -451,7 +454,7 @@ if (outype == 'f')
 	}
 
 // Database load section
-printf ("Loading database...\n");
+printf ("# Loading database...\n");
 ssort_db = (struct sha_sort_database *) malloc (sizeof (struct sha_sort_database) * database_alloc_size);
 do
 	{
@@ -497,7 +500,7 @@ do
 fclose (DB_IN_FP);
 
 // Database sort section
-printf ("Sorting database...\n");
+printf ("# Sorting database...\n");
 swap_made = TRUE;
 while (swap_made == TRUE)
 	{
@@ -516,7 +519,7 @@ while (swap_made == TRUE)
 
 // Search section
 //					Add progress indicator
-printf ("Searching for changes...\n");
+printf ("# Searching for changes...\n");
 file_index = 0;
 db_index = 0;
 while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
@@ -526,7 +529,7 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 		su_diff->add ++;
 if (suflags->verbose || suflags->update)
 	{
-		printf ("Calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
+		printf ("# Calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
 		strcpy (sha_command, SHA_CMD);				// compose command
 		strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
 		SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
@@ -586,7 +589,7 @@ if (suflags->verbose || suflags->update)
 			su_diff->rem ++;
 if (suflags->verbose || suflags->update)
 	{
-			printf ("Re-calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
+			printf ("# Re-calculating SHA for %s\n", ufs_list [ufs_list [file_index].index].filepath);
 			strcpy (sha_command, SHA_CMD);				// compose command
 			strcat (sha_command, enquote (ufs_list [ufs_list [file_index].index].filepath));
 			SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
@@ -598,7 +601,7 @@ if (suflags->verbose || suflags->update)
 				strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 				if (suflags->verbose)
 					{
-					printf ("# %s\n", sha_line);
+					printf ("SHA=%s\n", sha_line);
 					}
 				}
 				else
@@ -640,7 +643,7 @@ if (suflags->verbose || suflags->update)
 // Database re-sort section
 if (suflags->verbose || suflags->update)
 	{
-printf ("\nRe-sorting database...\n");
+printf ("\n# Re-sorting database...\n");
 for (line_index = 0; line_index < database_index + su_diff->add - 1; line_index ++)	// print output
 	{
 	ssort_db [line_index].index = line_index;
@@ -674,7 +677,25 @@ if (suflags->verbose || suflags->update)
 										su_diff->add, su_diff->rem - su_diff->upd, su_diff->upd, su_diff->same, TEXT_RESET);
 	}
 change_factor = (100.0 / database_index);
-printf ("Changes = %d%% removed, %d%% retained\n", (int)(change_factor * su_diff->rem), (int)(change_factor * (su_diff->upd + su_diff->upd + su_diff->same)));
+remove_perc = (int)(change_factor * su_diff->rem);
+retain_perc = (int)(change_factor * (su_diff->upd + su_diff->same));
+if (remove_perc > REMOVE_MAX || retain_perc < UPDATE_MIN)
+	{
+	printf ("%s### Large number of changes - do you have the right database/location?  %s", TEXT_RED, TEXT_RESET);
+	if (suflags->update == SW_ON && suflags->force == SW_OFF)
+		{
+		printf ("%sUse -f (force) to override%s\n", TEXT_RED, TEXT_RESET);
+		exit (1);
+		}
+		else
+		{
+		printf ("\n");
+		}
+	}
+	else
+	{
+	printf ("# Changes = %d%% removed, %d%% retained\n", remove_perc, retain_perc);
+	}
 if (suflags->update == SW_ON)
 	{
 	strcpy (database_out_filename, dataset_name);

@@ -83,6 +83,10 @@
 #define WITH_HASH 'H'
 #define NO_MARK 'N'
 
+/*Update*/
+#define REMOVE_MAX 80
+#define UPDATE_MIN 20
+
 /*SHA256SUM*/
 #define SHA_LENGTH 64
 #define SHA_OFFSET SHA_LENGTH + 2
@@ -227,6 +231,14 @@ struct sfind_flags
 	char filtering;			// read filter file
 	char output_current;		// current line matches filter
 	char progress;			// print progress for SHA256SUM generation
+	};
+
+struct supdate_flags
+	{
+	char filtering;			// read filter file
+	char force;			// force update
+	char update;			// perform update
+	char verbose;			// mirror everything to stdout
 	};
 
 void exit_error (char *message_a, char *message_b);
