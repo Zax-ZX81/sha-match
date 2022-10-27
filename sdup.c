@@ -186,24 +186,23 @@ do
 			separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
 			}
 		}
-		if (database_line > 0 && !strcmp (sdup_db [database_line - 1].sha, sdup_db [database_line].sha))	// not first line and SHA256SUMs match
+	if (database_line > 0 && !strcmp (sdup_db [database_line - 1].sha, sdup_db [database_line].sha))	// not first line and SHA256SUMs match
+		{
+		if (dup_count == 0)
 			{
-			if (dup_count == 0)
-				{
-				sdup_db [database_line - 1].dup_num = 1;
-				sdup_db [database_line].dup_num = 2;
-				dup_count = 2;
-				}
-				else
-				{
-				sdup_db [database_line].dup_num = ++dup_count;
-				}
+			sdup_db [database_line - 1].dup_num = 1;
+			sdup_db [database_line].dup_num = 2;
+			dup_count = 2;
 			}
 			else
 			{
-			dup_count = 0;
+			sdup_db [database_line].dup_num = ++dup_count;
 			}
-
+		}
+		else
+		{
+		dup_count = 0;
+		}
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
