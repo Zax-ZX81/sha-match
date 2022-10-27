@@ -61,15 +61,18 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 				case 'd':
 					dataset_out = FALSE;
 					break;
-				case KEEP_FIRST:			// default second choice
-					output_choice = KEEP_FIRST;
-					choice_scheme = BY_ALPHA;
-					mark_first = NO_MARK;
-					break;
 				case KEEP_NEWEST:			// default first choice if more than one specified
 					output_choice = KEEP_NEWEST;
 					choice_scheme = BY_TIME;
 					mark_first = NO_MARK;
+					break;
+				case KEEP_FIRST:			// default second choice
+					if (output_choice != KEEP_NEWEST)
+						{
+						output_choice = KEEP_FIRST;
+						choice_scheme = BY_ALPHA;
+						mark_first = NO_MARK;
+						}
 					break;
 				case DROP_FIRST:
 					if (choice_scheme == NOT_SET)
