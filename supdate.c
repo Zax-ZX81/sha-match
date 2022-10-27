@@ -321,6 +321,9 @@ while (find_list_read < find_list_write)
 	find_list_read ++;
 	}
 printf ("# %d entries found\n", find_list_write);
+strcpy (ufind_list [find_list_write].filepath, "~");
+ufind_list [find_list_write].object_type = T_FIL;
+find_list_write ++;
 
 // Find files in filelist with filter
 fs_list_alloc_size = DATABASE_INITIAL_SIZE;
