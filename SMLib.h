@@ -157,7 +157,9 @@ struct sdup_database
 	char sha [SHA_LENGTH + 1];
 	char filepath [FILEPATH_LENGTH];
 	char dataset [DATASET_LENGTH];
+	int timestamp;
 	int dup_num;
+	int index;
 	};
 
 struct find_list_entry

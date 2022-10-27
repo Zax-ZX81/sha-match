@@ -20,6 +20,9 @@ scheck: scheck.c SMLib.c
 sdup: sdup.c SMLib.c
 	$(CC) -o bin/sdup sdup.c SMLib.c $(CFLAGS)
 
+sdup2: sdup2.c SMLib.c
+	$(CC) -o bin/sdup2 sdup2.c SMLib.c $(CFLAGS)
+
 supdate: supdate.c SMLib.c
 	$(CC) -o bin/supdate supdate.c SMLib.c $(CFLAGS)
 
