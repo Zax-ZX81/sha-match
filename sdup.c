@@ -41,9 +41,10 @@ char database_filename [FILEPATH_LENGTH] = "";
 char database_type;
 char fileline [FILELINE_LENGTH];		// input line
 char dataset_out = TRUE;
-char output_choice = ALL_DUPES;			// Choice for which dups to print
+char output_choice = ALL_DUPES;			// choice for which dups to print
+char choice_scheme = NOT_SET;			// choice of time or alphbetical position
 char mark_first = WITH_COLOUR;
-char zero_sha = FALSE;				// don't zero size files by default
+char zero_sha = FALSE;				// don't handle zero size files by default
 char current_zero_sha = FALSE;
 struct sdup_database *sdup_db;			// sha database for duplicates
 
@@ -60,21 +61,63 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 				case 'd':
 					dataset_out = FALSE;
 					break;
-				case NOT_FIRST:
-					output_choice = NOT_FIRST;
+				case KEEP_FIRST:			// default second choice
+					output_choice = KEEP_FIRST;
+					choice_scheme = BY_ALPHA;
 					mark_first = NO_MARK;
 					break;
-				case ONLY_FIRST:
-					output_choice = ONLY_FIRST;
+				case KEEP_NEWEST:			// default first choice if more than one specified
+					output_choice = KEEP_NEWEST;
+					choice_scheme = BY_TIME;
 					mark_first = NO_MARK;
 					break;
-				case ONLY_LAST:
-					output_choice = ONLY_LAST;
-					mark_first = NO_MARK;
+				case DROP_FIRST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = DROP_FIRST;
+						choice_scheme = BY_ALPHA;
+						mark_first = NO_MARK;
+						}
 					break;
-				case NOT_LAST:
-					output_choice = NOT_LAST;
-					mark_first = NO_MARK;
+				case KEEP_LAST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = KEEP_LAST;
+						choice_scheme = BY_ALPHA;
+						mark_first = NO_MARK;
+						}
+					break;
+				case DROP_LAST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = DROP_LAST;
+						choice_scheme = BY_ALPHA;
+						mark_first = NO_MARK;
+						}
+					break;
+				case DROP_NEWEST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = DROP_NEWEST;
+						choice_scheme = BY_TIME;
+						mark_first = NO_MARK;
+						}
+					break;
+				case KEEP_OLDEST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = KEEP_OLDEST;
+						choice_scheme = BY_TIME;
+						mark_first = NO_MARK;
+						}
+					break;
+				case DROP_OLDEST:
+					if (choice_scheme == NOT_SET)
+						{
+						output_choice = DROP_OLDEST;
+						choice_scheme = BY_TIME;
+						mark_first = NO_MARK;
+						}
 					break;
 				case 'm':
 					mark_first = WITH_HASH;
@@ -91,12 +134,12 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 					zero_sha = TRUE;
 					break;
 				default:
-					printf ("%s# SHA Dup [dfFlLmuVz] <database file>\n", TEXT_YELLOW);
-					printf ("# [fFlL] mark which of a group to %sKEEP%s\n", TEXT_RED, TEXT_RESET);
-					printf ("%s# -f keeps first file in group\n", TEXT_YELLOW);
-					printf ("# -F keeps ALL BUT first file in group\n");
-					printf ("# -l keeps last file in group\n");
-					printf ("# -L keeps ALL BUT last file in group%s\n", TEXT_RESET);
+					printf ("%s# SHA Dup [dmuVz] {keep choice} <database file>\n", TEXT_YELLOW);
+					printf ("# [fFlLnNoO] use one only to mark which of a group to %sKEEP%s\n", TEXT_RED, TEXT_RESET);
+					printf ("%s# -f keeps first file in group\t\t\t# -n keeps newest file in group\n", TEXT_YELLOW);
+					printf ("# -F keeps ALL BUT first file in group\t\t# -N keeps ALL BUT newest file in group\n");
+					printf ("# -l keeps last file in group\t\t\t# -o keeps oldest file in group\n");
+					printf ("# -L keeps ALL BUT last file in group\t\t# -O keeps ALL BUT oldest file in group%s\n", TEXT_RESET);
 					exit (0);
 				}	// END switch
 			}	// END for switch_pos
@@ -179,7 +222,7 @@ for (database_line = 0; database_line <= last_line; database_line++)
 		{					// zero test
 		if (sdup_db [database_line].dup_num)	// Dup number not 0
 			{
-			if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_DUPES || output_choice == ONLY_FIRST || output_choice == NOT_LAST))	// first duplicate
+			if (sdup_db [database_line].dup_num == 1 && (output_choice == ALL_DUPES || output_choice == DROP_FIRST || output_choice == DROP_LAST))	// first duplicate
 				{
 				switch (mark_first)
 					{
@@ -198,12 +241,12 @@ for (database_line = 0; database_line <= last_line; database_line++)
 					}
 				printf ("\n");
 				}	// end if dup = 1
-			if (sdup_db [database_line].dup_num > 1 && (output_choice == ALL_DUPES || output_choice == NOT_FIRST\
-					 || output_choice == NOT_LAST || output_choice == ONLY_LAST))	// other duplicates
+			if (sdup_db [database_line].dup_num > 1 && (output_choice == ALL_DUPES || output_choice == KEEP_FIRST\
+					 || output_choice == DROP_LAST || output_choice == KEEP_LAST))	// other duplicates
 				{
 				switch (output_choice)
 					{
-					case NOT_LAST:
+					case DROP_LAST:
 						if (sdup_db [database_line + 1].dup_num)
 							{
 							printf ("%s", sdup_db [database_line].filepath);
@@ -214,7 +257,7 @@ for (database_line = 0; database_line <= last_line; database_line++)
 							printf ("\n");
 							}
 						break;
-					case ONLY_LAST:
+					case KEEP_LAST:
 						if (!sdup_db [database_line + 1].dup_num)
 							{
 							printf ("%s", sdup_db [database_line].filepath);

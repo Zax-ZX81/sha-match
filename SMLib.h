@@ -73,10 +73,17 @@
 /*Duplicate Codes*/
 #define ALL_DUPES 'A'
 #define ALL_UNIQUE 'u'
-#define NOT_FIRST 'f'
-#define NOT_LAST 'l'
-#define ONLY_FIRST 'F'
-#define ONLY_LAST 'L'
+#define NOT_SET 'n'
+#define BY_TIME 't'
+#define BY_ALPHA 'a'
+#define KEEP_FIRST 'f'
+#define DROP_FIRST 'F'
+#define KEEP_LAST 'l'
+#define DROP_LAST 'L'
+#define KEEP_NEWEST 'n'
+#define DROP_NEWEST 'N'
+#define KEEP_OLDEST 'o'
+#define DROP_OLDEST 'O'
 
 /*Marking*/
 #define WITH_COLOUR 'C'
