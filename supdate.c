@@ -62,7 +62,8 @@ int file_index = 0;
 int db_index = 0;
 int chr_idx;
 int database_timestamp;
-int remove_perc, retain_perc;
+int remove_pct, retain_pct;
+int out_db_index;
 double change_factor;
 
 char database_in_filename [FILEPATH_LENGTH] = "";	// input file name with extension
@@ -199,7 +200,7 @@ if (suflags->filtering)
 				}
 			if (suflags->verbose)
 				{
-				fprintf (stderr, "F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
+				printf ("F\tFI=%d\tFO=%c\tFP=%s\n", filter_index, \
 								filter_list [filter_index].object_type, \
 								filter_list [filter_index].filepath);
 				}
@@ -245,7 +246,7 @@ if (DIR_PATH != NULL)
 		strcpy (ufind_list [find_list_write].filepath, dir_ents->d_name);
 		if (suflags->verbose)
 			{
-			fprintf (stderr, "FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
+			printf ("FS\tFLW=%3d\tOT=%c\tDT=%d\tDN=%s=\n", find_list_write, \
 								ufind_list [find_list_write].object_type, \
 								dir_ents->d_type, dir_ents->d_name);
 			}
@@ -304,7 +305,7 @@ while (find_list_read < find_list_write)
 					}
 				if (suflags->verbose)
 					{
-					fprintf (stderr, "FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
+					printf ("FBS\tFLW=%3d\tOT=%c\tFP=%s=\n", find_list_write, \
 									ufind_list [find_list_write].object_type, \
 									ufind_list [find_list_write].filepath);
 					}
@@ -330,7 +331,6 @@ if (suflags->filtering > 0)				// are we applying filtering?
 	}
 for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 	{
-//	printf ("%d, ", find_list_read);
 	ufind_list [find_list_read].filtered = TRUE;		// set so that if not filtering all results are output
 	filter_match = TRUE;
 	if (suflags->filtering)					// are we applying filtering?
@@ -355,7 +355,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 				}
 				if (suflags->verbose)
 					{
-					fprintf (stderr, "DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
+					printf ("DL\tFLW=%d\tFLR=%d\tFFP=%s\tFLFP=%s\tFM=%d\tFILT=%d\n", find_list_write, \
 										find_list_read, \
 										filter_list [filter_index].filepath, \
 										ufind_list [find_list_read].filepath, filter_match, \
@@ -392,7 +392,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		}
 	if (suflags->verbose)
 		{
-		fprintf (stderr, "FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%d\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
+		printf ("FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%d\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
 									ufind_list [find_list_read].filepath, \
 									ufind_list [find_list_read].filesize, \
 									ufind_list [find_list_read].timestamp);
@@ -418,7 +418,7 @@ if (suflags->filtering && (suflags->verbose || suflags->update))
 		{
 		if (suflags->verbose)
 			{
-			fprintf (stderr, "OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
+			printf ("OF\tFI=%d\tOT=%c\tFP=%s\n", filter_index, \
 							filter_list [filter_index].object_type, \
 							filter_list [filter_index].filepath);
 			}
@@ -486,7 +486,7 @@ do
 		ssort_db [database_index].index = database_index;	// load sort index in start position
 		if (suflags->verbose)
 			{
-			fprintf (stderr, "SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [database_index].sha, \
+			printf ("SL\tSs=%s\tSf=%s\tSd=%s\tSi=%d\n", ssort_db [database_index].sha, \
 							ssort_db [database_index].filepath, \
 							ssort_db [database_index].dataset, \
 							ssort_db [database_index].index);
@@ -520,7 +520,6 @@ while (swap_made == TRUE)
 	}
 
 // Search section
-//					Add progress indicator
 printf ("# Searching for changes...\n");
 file_index = 0;
 db_index = 0;
@@ -543,11 +542,11 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 				strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
 				if (suflags->verbose)
 					{
-					fprintf (stderr, "# %s\n", sha_line);
+					printf ("# %s\n", sha_line);
 					}
 				}
 				else
-				{	// FIX VVV verbose?
+				{
 				fprintf (stderr, "Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 				exit (1);
 				}
@@ -556,18 +555,13 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
 			if (suflags->verbose)
 				{
-				printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
+				printf ("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
 							TEXT_ORANGE, uf_sort_list [uf_sort_list [file_index].index].filepath, TEXT_RESET, \
 							db_index, \
 							ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
 				}
 			}	// End verbose
 		file_index ++;
-		if (database_index + su_diff->add + 1 == database_alloc_size)		// check memory usage, reallocate
-			{
-			database_alloc_size += DATABASE_INCREMENT;
-			ssort_db = (struct sha_sort_database *) realloc (ssort_db, sizeof (struct sha_sort_database) * database_alloc_size);
-			}
 		}	//End new entry
 		else
 		{
@@ -581,7 +575,7 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			su_diff->rem ++;
 			if (suflags->verbose)
 				{
-				printf("FI=%d\t%s\tSDR=%d\tDI=%d\t%s%s%s\n", file_index, \
+				printf ("FI=%d\t%s\tSDR=%d\tDI=%d\t%s%s%s\n", file_index, \
 							uf_sort_list [uf_sort_list [file_index].index].filepath, \
 							su_diff->rem, db_index, \
 							TEXT_ORANGE, ssort_db [ssort_db [db_index].index].filepath, TEXT_RESET);
@@ -594,8 +588,6 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 		if (uf_sort_list [uf_sort_list [file_index].index].timestamp > database_timestamp)	// File has newer filestamp
 			{
 			su_diff->upd ++;
-			ssort_db [ssort_db [db_index].index].sha [0] = 'x';
-			su_diff->rem ++;
 			if (suflags->verbose || suflags->update)
 				{
 				printf ("# Re-calculating SHA for %s\n", uf_sort_list [uf_sort_list [file_index].index].filepath);
@@ -605,25 +597,22 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 				fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
 				if (sha_verify (sha_line))				// verify SHA256SUM
 					{
-					strncpy (ssort_db [database_index + su_diff->add - 2].sha, sha_line, SHA_LENGTH);	// enter SHA256SUM into database
-					ssort_db [database_index + su_diff->add - 2].sha [SHA_LENGTH] = NULL_TERM;
-					strcpy (ssort_db [database_index + su_diff->add - 2].dataset, dataset_name);
+					strncpy (ssort_db [ssort_db [db_index].index].sha, sha_line, SHA_LENGTH);	// replace SHA256SUM in database
+					ssort_db [ssort_db [db_index].index].sha [SHA_LENGTH] = NULL_TERM;
 					if (suflags->verbose)
 						{
-						fprintf (stderr, "SHA=%s\n", sha_line);
+						printf ("SHA=%s\n", sha_line);
 						}
 					}
 					else
-					{	// FIX VVV verbose?
+					{
 					fprintf (stderr, "Invalid SHA256SUM from file %s\n%s\n%s\n", ssort_db [database_index + su_diff->add - 2].filepath, sha_line, sha_command);
 					exit (1);
 					}
 				fclose (SHA_PIPE);
-				strcpy (ssort_db [database_index + su_diff->add - 2].filepath, uf_sort_list [uf_sort_list [file_index].index].filepath);
-				ssort_db [database_index + su_diff->add - 2].index = database_index + su_diff->add - 2;
 				if (suflags->verbose)
 					{
-					printf("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
+					printf ("FI=%d\t%s%s%s\tDI=%d\t%s\tSDA=%d\n", file_index, \
 								TEXT_ORANGE, uf_sort_list [uf_sort_list [file_index].index].filepath, TEXT_RESET, \
 								db_index, \
 								ssort_db [ssort_db [db_index].index].filepath, su_diff->add);
@@ -636,11 +625,11 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			}
 		if (suflags->verbose)
 			{
-			printf("FI=%d\t%s\tDI=%d\t%s\tSDS=%d\t", file_index, \
+			printf ("FI=%d\t%s\tDI=%d\t%s\tSDS=%d\t", file_index, \
 						uf_sort_list [uf_sort_list [file_index].index].filepath, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath, su_diff->same);
-			printf("FS=%d\tFT=%d\tDT=%d\tTD=%d\n", uf_sort_list [uf_sort_list [file_index].index].filesize, \
+			printf ("FS=%d\tFT=%d\tDT=%d\tTD=%d\n", uf_sort_list [uf_sort_list [file_index].index].filesize, \
 								uf_sort_list [uf_sort_list [file_index].index].timestamp, \
 								database_timestamp, uf_sort_list [uf_sort_list [file_index].index].timestamp - database_timestamp);
 			}
@@ -650,10 +639,11 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 	}
 
 // Database re-sort section
+out_db_index = database_index + su_diff->add;
 if (suflags->verbose || suflags->update)
 	{
 printf ("\n# Re-sorting database...\n");
-for (line_index = 0; line_index < database_index + su_diff->add - 1; line_index ++)	// print output
+for (line_index = 0; line_index < out_db_index -1; line_index ++)	// print output
 	{
 	ssort_db [line_index].index = line_index;
 	}
@@ -661,7 +651,7 @@ swap_made = TRUE;
 while (swap_made == TRUE)
 	{
 	swap_made = FALSE;
-	for (line_index = 0; line_index < database_index + su_diff->add - 2; line_index ++)
+	for (line_index = 0; line_index < out_db_index - 2; line_index ++)
 		{
 		if (strcmp (ssort_db [ssort_db [line_index].index].sha, ssort_db [ssort_db [line_index + 1].index].sha) > 0)
 			{
@@ -677,18 +667,18 @@ if (suflags->verbose || suflags->update)
 	{
 	printf ("# %s%s%s: %s\t%d entries added, %d entries removed, %d entries updated, %d entries unchanged%s\n", \
 										TEXT_BLUE, dataset_name, TEXT_RESET, TEXT_YELLOW, \
-										su_diff->add, su_diff->rem - su_diff->upd, su_diff->upd, su_diff->same, TEXT_RESET);
+										su_diff->add, su_diff->rem, su_diff->upd, su_diff->same, TEXT_RESET);
 	}
 	else
 	{
 	printf ("# %s%s%s: %s\t%d entries to be added, %d entries to be removed, %d entries to be updated, %d entries unchanged%s\n", \
 										TEXT_BLUE, dataset_name, TEXT_RESET, TEXT_YELLOW, \
-										su_diff->add, su_diff->rem - su_diff->upd, su_diff->upd, su_diff->same, TEXT_RESET);
+										su_diff->add, su_diff->rem, su_diff->upd, su_diff->same, TEXT_RESET);
 	}
 change_factor = (100.0 / database_index);
-remove_perc = (int)(change_factor * su_diff->rem);
-retain_perc = (int)(change_factor * (su_diff->upd + su_diff->same));
-if (remove_perc > REMOVE_MAX || retain_perc < UPDATE_MIN)
+remove_pct = (int)(change_factor * su_diff->rem);
+retain_pct = (int)(change_factor * (su_diff->upd + su_diff->same));
+if (remove_pct > REMOVE_MAX || retain_pct < UPDATE_MIN)
 	{
 	printf ("%s### Large number of changes - do you have the right database/location?  %s", TEXT_RED, TEXT_RESET);
 	if (suflags->update == SW_ON && suflags->force == SW_OFF)
@@ -703,7 +693,7 @@ if (remove_perc > REMOVE_MAX || retain_perc < UPDATE_MIN)
 	}
 	else
 	{
-	printf ("# Changes = %d%% removed, %d%% retained\n", remove_perc, retain_perc);
+	printf ("# Changes = %d%% removed, %d%% retained\n", remove_pct, retain_pct);
 	}
 if (suflags->update == SW_ON)
 	{
@@ -715,13 +705,14 @@ if (suflags->update == SW_ON)
 		exit_error ("Can't open database for output: ", database_out_filename);
 		}
 	printf ("# Writing updated database to: %s%s%s\n", TEXT_BLUE, database_out_filename, TEXT_RESET);
-	for (line_index = 0; line_index < database_index + su_diff->add - 1 - su_diff->rem; line_index ++)	// write output
+	for (line_index = 0; line_index < out_db_index - su_diff->rem - 1; line_index ++)	// write output
 		{
 		fprintf (DB_OUT_FP, "%s\t%s\t%s\n", ssort_db [ssort_db [line_index].index].sha, \
-					ssort_db [ssort_db [line_index].index].filepath, \
-					dataset_name);
+						ssort_db [ssort_db [line_index].index].filepath, \
+						dataset_name);
 		}
 	fclose (DB_OUT_FP);
+
 	}
 
 // Clean-up section
