@@ -215,6 +215,10 @@ do
 		database_alloc_size += DATABASE_INCREMENT;
 		sdup_db = (struct sdup_database *) realloc (sdup_db, sizeof (struct sdup_database) * database_alloc_size);
 		}
+/*	if (verbose)
+		{*/
+		printf ("S=%s\tF=%s=\tD=%s\tT=%d\tDL=%d\tCS=%c\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, sdup_db [database_line].timestamp, database_line, choice_scheme);
+/*		}*/
 	database_line ++;
 	} while (!feof (SMDB_IN_FP));
 fclose (SMDB_IN_FP);
@@ -230,6 +234,9 @@ while (swap_made == TRUE)
 	swap_made = FALSE;
 	for (line_index = 0; line_index < database_line - 2; line_index ++)
 		{
+//		printf ("CS=%c\tCL=%s=\tCT=%d\tNL=%s=\tNT=%d\n", choice_scheme, \
+//								sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index].index].timestamp, \
+//								sdup_db [sdup_db [line_index + 1].index].filepath, sdup_db [sdup_db [line_index + 1].index].timestamp);
 		if ((choice_scheme == BY_ALPHA && strcmp (sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index + 1].index].filepath) > 0) \
 			|| (choice_scheme == BY_TIME && sdup_db [sdup_db [line_index].index].timestamp > sdup_db [sdup_db [line_index + 1].index].timestamp))
 			{
