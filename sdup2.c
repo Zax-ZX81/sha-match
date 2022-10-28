@@ -1,18 +1,10 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *        SHA-Dup 0.30           *
+ *        SHA-Dup 0.31           *
  *                               *
  *        2022-10-22             *
  *                               *
  *        Zax                    *
- *                               *
- * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * *
- *            TODO               *
- *                               *
- * Add datestamps as dup choice  *
- * Need secondary search         *
  *                               *
  * * * * * * * * * * * * * * * * */
 
@@ -23,7 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#define PROG_VERSION "0.30"
+#define PROG_VERSION "0.31"
 
 int main (int argc, char *argv [])
 
@@ -177,10 +169,7 @@ if (SMDB_IN_FP == NULL)
 	exit_error ("Can't find Database: ", database_filename);
 	}
 
-// sdup_db [database_line].timestamp
 // Database load section
-// Load section should load data only, not mark duplicates
-// If time choice get timestamps
 if (sdflags->c_scheme == BY_TIME)
 	{
 	fprintf (stderr, "# Gathering timestamps...\n");
@@ -207,12 +196,10 @@ do
 			{
 			sdflags->current_zero_sha = TRUE;
 			}
-//printf ("%s%s%d\t%s", sha_zero_chk, SHA_ZERO, sdflags->current_zero_sha, fileline);
 		if ((!sdflags->zero_sha && !sdflags->current_zero_sha))		// zero test
 			{
 			if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 				{
-//printf ("Here 1");
 				strncpy (sdup_db [database_line].sha, fileline, SHA_LENGTH);
 				sdup_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
 				strcpy (sdup_db [database_line].filepath, fileline + SHA_LENGTH + 2);
@@ -223,7 +210,6 @@ do
 				{
 				separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
 				}
-//printf ("Here 2");
 			sdup_db [database_line].index = database_line;
 			if (sdflags->c_scheme == BY_TIME)
 				{
@@ -239,7 +225,6 @@ do
 				}	// end if sdflags
 			}	// end zero test
 		}	// end if fileline
-//printf ("Here 3");
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
@@ -247,7 +232,9 @@ do
 		}
 	if (sdflags->verbose)
 		{
-		printf ("S=%s\tF=%s=\tD=%s\tT=%d\tDL=%d\tCS=%c\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, sdup_db [database_line].timestamp, database_line, sdflags->c_scheme);
+		printf ("S=%s\tF=%s=\tD=%s\tT=%d\tDL=%d\tCS=%c\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, \
+								sdup_db [database_line].dataset, sdup_db [database_line].timestamp, \
+								database_line, sdflags->c_scheme);
 		}
 	if (!sdflags->current_zero_sha)
 		{
@@ -261,10 +248,6 @@ if (sdflags->c_scheme == BY_TIME)
 	fprintf (stderr, "\n");
 	}
 
-// Sort section
-// Sort with index by sha then alpha for fFlL
-// Sort with index by sha then time for nNoO
-// Mark duplicates during/after search
 // Database sort section
 sdflags->swap_made = TRUE;
 while (sdflags->swap_made == TRUE)
@@ -327,15 +310,15 @@ for (line_index = 1; line_index < database_line - 2; line_index ++)
 	}
 
 // Search section
-// Divide search section into time and alpha
-// Use re-referenced index in search
 last_line = database_line;
 for (database_line = 0; database_line <= last_line; database_line++)
 	{
 	sdflags->current_zero_sha = strcmp (sdup_db [sdup_db [database_line].index].sha, SHA_ZERO);
 	if (sdup_db [sdup_db [database_line].index].dup_num)	// Dup number not 0
 		{
-		if (sdup_db [sdup_db [database_line].index].dup_num == 1 && (sdflags->o_choice == ALL_DUPES || sdflags->o_choice == DROP_FIRST || sdflags->o_choice == DROP_LAST))	// first duplicate
+		if (sdup_db [sdup_db [database_line].index].dup_num == 1 && (sdflags->o_choice == ALL_DUPES || \
+									sdflags->o_choice == DROP_FIRST || \
+									sdflags->o_choice == DROP_LAST))	// first duplicate
 			{
 			switch (sdflags->mark_first)
 				{
@@ -393,14 +376,16 @@ for (database_line = 0; database_line <= last_line; database_line++)
 			}
 		if ((sdup_db [sdup_db [database_line].index].dup_num == 1 && sdflags->o_choice == ALL_UNIQUE) || !sdflags->current_zero_sha)	// output first duplicate if all unique
 			{
-			printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, sdup_db [sdup_db [database_line].index].dataset);
+			printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, \
+						sdup_db [sdup_db [database_line].index].dataset);
 			}
 		}	// end dup found
 		else
 		{	// no dup found
 		if (sdflags->o_choice == ALL_UNIQUE)
 			{
-			printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, sdup_db [sdup_db [database_line].index].dataset);
+			printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, \
+						sdup_db [sdup_db [database_line].index].dataset);
 			}
 		}	// end else no dup
 	}	// end for loop
