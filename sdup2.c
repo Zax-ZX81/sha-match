@@ -372,7 +372,6 @@ for (database_line = 0; database_line <= last_line; database_line++)
 						}
 					printf ("\n");
 				}	// end switch
-//				printf ("%s\n", sdup_db [sdup_db [database_line].index].filepath);
 			}
 		if ((sdup_db [sdup_db [database_line].index].dup_num == 1 && sdflags->o_choice == ALL_UNIQUE) || !sdflags->current_zero_sha)	// output first duplicate if all unique
 			{
