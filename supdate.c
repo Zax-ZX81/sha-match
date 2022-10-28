@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *         zfind 0.52            *
+ *         zfind 0.521           *
  *                               *
  *         2022-10-22            *
  *                               *
@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.50"
+#define PROG_VERSION "0.521"
 #define FILTER_PROG_NAME "SUpdate"
 
 char filter_line_check (char *filter_line);
@@ -100,6 +100,16 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 				case 'i':
 					suflags->filtering = F_INCL;
 					break;
+				case 'o':
+					if (argv [arg_no + 1] != NULL)  // new output file specified
+						{
+						strcpy (database_out_filename, argv [arg_no + 1]);
+						arg_no++;
+						switch_pos = strlen (argv[arg_no]);
+						}
+					suflags->new_out = SW_ON;
+					suflags->update = SW_ON;	// specifying output file implies update
+					break;
 				case 'U':
 					suflags->update = SW_ON;
 					break;
@@ -113,8 +123,8 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					suflags->filtering = F_EXCL;
 					break;
 				default:
-					exit_error ("# SHA Update [-dfiUvVx] <database file>","");
-					break;
+					printf ("%s# SHA Update [-dfiUvVx] <database file>%s\n", TEXT_YELLOW, TEXT_RESET);
+					exit (0);
 				}	// END switch
 			}	// END for switch_pos
 		}	// END for arg_no
@@ -192,10 +202,10 @@ if (suflags->filtering)
 						}
 					break;
 				case 2:
-					filter_list [filter_index].object_type = T_COM;         // mark as comment
+					filter_list [filter_index].object_type = T_COM; // mark as comment
 					break;
 				default:
-					filter_list [filter_index].object_type = T_REJ;         // mark as rejected
+					filter_list [filter_index].object_type = T_REJ; // mark as rejected
 					break;
 				}
 			if (suflags->verbose)
@@ -700,8 +710,15 @@ if (remove_pct > REMOVE_MAX || retain_pct < UPDATE_MIN)
 	}
 if (suflags->update == SW_ON)
 	{
-	strcpy (database_out_filename, dataset_name);
-	strcat (database_out_filename, "-U.s2db");
+	if (suflags->new_out == SW_ON)
+		{
+		strcat (database_out_filename, ".s2db");
+		}
+		else
+		{
+		strcpy (database_out_filename, dataset_name);
+		strcat (database_out_filename, "-U.s2db");
+		}
 	DB_OUT_FP = fopen (database_out_filename, "w");		// open output database
 	if (DB_OUT_FP == NULL)
 		{

@@ -248,6 +248,7 @@ struct supdate_flags
 	char show_del;			// read filter file
 	char filtering;			// read filter file
 	char force;			// force update
+	char new_out;			// send to named output file
 	char update;			// perform update
 	char verbose;			// mirror everything to stdout
 	};
