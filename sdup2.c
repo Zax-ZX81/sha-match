@@ -45,6 +45,7 @@ char switch_chr;				// args section
 char database_filename [FILEPATH_LENGTH] = "";
 char database_type;
 char fileline [FILELINE_LENGTH];		// input line
+char sha_zero_chk [SHA_LENGTH];
 
 struct sdup_database *sdup_db;			// sha database for duplicates
 struct stat file_stat;
@@ -199,32 +200,36 @@ do
 		}
 	if (fileline != NULL && database_ferr)
 		{
-		if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
+		strncpy (sha_zero_chk, fileline, SHA_LENGTH);
+		if (!(!sdflags->zero_sha && !strcmp (sha_zero_chk, SHA_ZERO)))		// zero test
 			{
-			strncpy (sdup_db [database_line].sha, fileline, SHA_LENGTH);
-			sdup_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
-			strcpy (sdup_db [database_line].filepath, fileline + SHA_LENGTH + 2);
-			sdup_db [database_line].filepath[strlen (sdup_db [database_line].filepath) - 1] = NULL_TERM;
-			strcpy (sdup_db [database_line].dataset, database_filename);	// enter database filename as dataset
-			}
-			else		// load SHA256DB data
-			{
-			separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
-			}
-		sdup_db [database_line].index = database_line;
-		if (sdflags->c_scheme == BY_TIME)
-			{
-			if (stat (sdup_db [database_line].filepath, &file_stat) == 0)
+			if (database_type == SHA256_TYPE)		// load standard SHA256SUM output
 				{
-				if (file_stat.st_mode & S_IFREG)
-					{
-					sdup_db [database_line].timestamp = file_stat.st_mtime;	// get file time stamp
-					ts_count ++;
-					fprintf (stderr, "%c%d", CGE_RET, ts_count);
-					}
+				strncpy (sdup_db [database_line].sha, fileline, SHA_LENGTH);
+				sdup_db [database_line].sha [SHA_LENGTH] = NULL_TERM;
+				strcpy (sdup_db [database_line].filepath, fileline + SHA_LENGTH + 2);
+				sdup_db [database_line].filepath[strlen (sdup_db [database_line].filepath) - 1] = NULL_TERM;
+				strcpy (sdup_db [database_line].dataset, database_filename);	// enter database filename as dataset
 				}
-			}
-		}
+				else		// load SHA256DB data
+				{
+				separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
+				}
+			sdup_db [database_line].index = database_line;
+			if (sdflags->c_scheme == BY_TIME)
+				{
+				if (stat (sdup_db [database_line].filepath, &file_stat) == 0)
+					{
+					if (file_stat.st_mode & S_IFREG)
+						{
+						sdup_db [database_line].timestamp = file_stat.st_mtime;	// get file time stamp
+						ts_count ++;
+						fprintf (stderr, "%c%d", CGE_RET, ts_count);
+						}	// end if file_stat
+					}	// end if stat
+				}	// end if sdflags
+			}	// end zero test
+		}	// end if fileline
 	if (database_line + 1 == database_alloc_size)		// check memory usage, reallocate
 		{
 		database_alloc_size += DATABASE_INCREMENT;
