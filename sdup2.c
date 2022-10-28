@@ -272,12 +272,12 @@ while (sdflags->swap_made == TRUE)
 	sdflags->swap_made = FALSE;
 	for (line_index = 0; line_index < database_line - 2; line_index ++)
 		{
-		if (sdflags->verbose)
+/*		if (sdflags->verbose)
 			{
 			printf ("CS=%c\tCL=%s=\tCT=%d\tNL=%s=\tNT=%d\n", sdflags->c_scheme, \
 							sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index].index].timestamp, \
 							sdup_db [sdup_db [line_index + 1].index].filepath, sdup_db [sdup_db [line_index + 1].index].timestamp);
-			}
+			}*/
 		if (strcmp (sdup_db [sdup_db [line_index].index].sha, sdup_db [sdup_db [line_index + 1].index].sha) == 0)
 			{
 			if ((sdflags->c_scheme == BY_ALPHA && strcmp (sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index + 1].index].filepath) > 0) \
@@ -295,6 +295,10 @@ while (sdflags->swap_made == TRUE)
 // Mark duplicates section
 for (line_index = 1; line_index < database_line - 2; line_index ++)
 	{
+	if (sdflags->verbose)
+		{
+		printf ("S-1=%s\tS=%s\n", sdup_db [sdup_db [line_index - 1].index].sha, sdup_db [sdup_db [line_index].index].sha);
+		}
 	if (!strcmp (sdup_db [sdup_db [line_index - 1].index].sha, sdup_db [sdup_db [line_index].index].sha))	// SHA256SUMs match
 		{
 		if (dup_count == 0)
@@ -307,9 +311,17 @@ for (line_index = 1; line_index < database_line - 2; line_index ++)
 			{
 			sdup_db [sdup_db [line_index].index].dup_num = ++dup_count;
 			}
+		if (sdflags->verbose)
+			{
+			printf ("%d\n", dup_count);
+			}
 		}
 		else
 		{
+		if (sdflags->verbose)
+			{
+			printf ("\n");
+			}
 		dup_count = 0;
 		}
 	}
