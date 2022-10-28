@@ -51,6 +51,7 @@
 #define SORT_SHA 1
 #define SORT_FILE 2
 #define SORT_MAX_LINES 80000
+#define SWAP_TICK 500
 
 /*Filters*/
 #define FILTER_BK ".sf_filter"
@@ -250,6 +251,19 @@ struct supdate_flags
 	char update;			// perform update
 	char verbose;			// mirror everything to stdout
 	};
+
+struct sdup_flags
+	{
+	char o_choice;		// from switch for output choice
+	char c_scheme;		// alpha for time based choice
+	char mark_first;		// mark first in group with colour or hash
+	char dataset_out;		// output dataset with report
+	char swap_made;			// was swap made during this round
+	char verbose;			// mirror everything to stdout
+	char zero_sha;			// consider zero size files
+	char current_zero_sha;		// current sha is for zero size file
+	};
+
 
 void exit_error (char *message_a, char *message_b);
 char *three_fields (char *field_a, char *field_b, char *field_c);

@@ -39,21 +39,25 @@ int dup_count = 0;
 int database_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index;
 int swap_index;
+int ts_count;			// the number of timestamps found
 
 char switch_chr;				// args section
 char database_filename [FILEPATH_LENGTH] = "";
 char database_type;
 char fileline [FILELINE_LENGTH];		// input line
-char dataset_out = TRUE;
-char output_choice = ALL_DUPES;			// choice for which dups to print
-char choice_scheme = NOT_SET;			// choice of time or alphbetical position
-char mark_first = WITH_COLOUR;
-char zero_sha = FALSE;				// don't handle zero size files by default
-char current_zero_sha = FALSE;
-char swap_made = FALSE;
 
 struct sdup_database *sdup_db;			// sha database for duplicates
 struct stat file_stat;
+struct sdup_flags sdflags [1] = {0};
+
+sdflags->dataset_out = TRUE;			// output dataset by default
+sdflags->o_choice = ALL_DUPES;			// choice for which dups to print
+sdflags->c_scheme = NOT_SET;			// choice of time or alphbetical position
+sdflags->mark_first = WITH_COLOUR;		// mark with colour by default
+sdflags->zero_sha = FALSE;			// don't handle zero size files by default
+sdflags->current_zero_sha = FALSE;
+sdflags->swap_made = FALSE;
+sdflags->verbose = FALSE;
 
 // Arguments section
 for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
@@ -66,87 +70,92 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 			switch (switch_chr)
 				{
 				case 'd':
-					dataset_out = FALSE;
+					sdflags->dataset_out = FALSE;
 					break;
 				case KEEP_NEWEST:			// default first choice if more than one specified
-					output_choice = KEEP_FIRST;
-					choice_scheme = BY_TIME;
-					mark_first = NO_MARK;
+					sdflags->o_choice = KEEP_FIRST;
+					sdflags->c_scheme = BY_TIME;
+					sdflags->mark_first = NO_MARK;
 					break;
 				case KEEP_FIRST:			// default second choice
-					if (output_choice != KEEP_FIRST)
+					if (sdflags->o_choice != KEEP_FIRST)
 						{
-						output_choice = KEEP_FIRST;
-						choice_scheme = BY_ALPHA;
-						mark_first = NO_MARK;
+						sdflags->o_choice = KEEP_FIRST;
+						sdflags->c_scheme = BY_ALPHA;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case DROP_FIRST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = DROP_FIRST;
-						choice_scheme = BY_ALPHA;
-						mark_first = NO_MARK;
+						sdflags->o_choice = DROP_FIRST;
+						sdflags->c_scheme = BY_ALPHA;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case KEEP_LAST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = KEEP_LAST;
-						choice_scheme = BY_ALPHA;
-						mark_first = NO_MARK;
+						sdflags->o_choice = KEEP_LAST;
+						sdflags->c_scheme = BY_ALPHA;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case DROP_LAST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = DROP_LAST;
-						choice_scheme = BY_ALPHA;
-						mark_first = NO_MARK;
+						sdflags->o_choice = DROP_LAST;
+						sdflags->c_scheme = BY_ALPHA;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case DROP_NEWEST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = DROP_FIRST;
-						choice_scheme = BY_TIME;
-						mark_first = NO_MARK;
+						sdflags->o_choice = DROP_FIRST;
+						sdflags->c_scheme = BY_TIME;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case KEEP_OLDEST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = KEEP_LAST;
-						choice_scheme = BY_TIME;
-						mark_first = NO_MARK;
+						sdflags->o_choice = KEEP_LAST;
+						sdflags->c_scheme = BY_TIME;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case DROP_OLDEST:
-					if (choice_scheme == NOT_SET)
+					if (sdflags->c_scheme == NOT_SET)
 						{
-						output_choice = DROP_LAST;
-						choice_scheme = BY_TIME;
-						mark_first = NO_MARK;
+						sdflags->o_choice = DROP_LAST;
+						sdflags->c_scheme = BY_TIME;
+						sdflags->mark_first = NO_MARK;
 						}
 					break;
 				case 'm':
-					mark_first = WITH_HASH;
+					sdflags->mark_first = WITH_HASH;
 					break;
 				case 'u':
-					output_choice = ALL_UNIQUE;
-					zero_sha = TRUE;
-					mark_first = NO_MARK;
+					sdflags->o_choice = ALL_UNIQUE;
+					sdflags->zero_sha = TRUE;
+					sdflags->mark_first = NO_MARK;
 					break;
 				case 'V':
 					printf ("SHA Dup version %s\n", PROG_VERSION);
 					exit (0);
+				case 'v':
+					sdflags->verbose = TRUE;
+					break;
 				case 'z':
-					zero_sha = TRUE;
+					sdflags->zero_sha = TRUE;
 					break;
 				default:
 					printf ("%s# SHA Dup [dmuVz] {keep choice} <database file>\n", TEXT_YELLOW);
 					printf ("# [fFlLnNoO] use one only to mark which of a group to %sKEEP%s\n", TEXT_RED, TEXT_RESET);
-					printf ("%s# -f keeps first file in group\t\t\t# -n keeps newest file in group\n", TEXT_YELLOW);
+					printf ("%s#\t\t\t\t\t\t\t Time-based choices require\n", TEXT_YELLOW);
+					printf ("#\t\t\t\t\t\t\t files to be present\n");
+					printf ("# -f keeps first file in group\t\t\t# -n keeps newest file in group\n", TEXT_YELLOW);
 					printf ("# -F keeps ALL BUT first file in group\t\t# -N keeps ALL BUT newest file in group\n");
 					printf ("# -l keeps last file in group\t\t\t# -o keeps oldest file in group\n");
 					printf ("# -L keeps ALL BUT last file in group\t\t# -O keeps ALL BUT oldest file in group%s\n", TEXT_RESET);
@@ -171,6 +180,10 @@ if (SMDB_IN_FP == NULL)
 // Database load section
 // Load section should load data only, not mark duplicates
 // If time choice get timestamps
+if (sdflags->c_scheme == BY_TIME)
+	{
+	fprintf (stderr, "# Gathering timestamps...\n");
+	}
 sdup_db = (struct sdup_database *) malloc (sizeof (struct sdup_database) * database_alloc_size);
 do
 	{
@@ -199,13 +212,15 @@ do
 			separate_fields (sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, fileline);
 			}
 		sdup_db [database_line].index = database_line;
-		if (choice_scheme == BY_TIME)
+		if (sdflags->c_scheme == BY_TIME)
 			{
 			if (stat (sdup_db [database_line].filepath, &file_stat) == 0)
 				{
 				if (file_stat.st_mode & S_IFREG)
 					{
 					sdup_db [database_line].timestamp = file_stat.st_mtime;	// get file time stamp
+					ts_count ++;
+					fprintf (stderr, "%c%d", CGE_RET, ts_count);
 					}
 				}
 			}
@@ -215,35 +230,45 @@ do
 		database_alloc_size += DATABASE_INCREMENT;
 		sdup_db = (struct sdup_database *) realloc (sdup_db, sizeof (struct sdup_database) * database_alloc_size);
 		}
-/*	if (verbose)
-		{*/
-		printf ("S=%s\tF=%s=\tD=%s\tT=%d\tDL=%d\tCS=%c\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, sdup_db [database_line].timestamp, database_line, choice_scheme);
-/*		}*/
+	if (sdflags->verbose)
+		{
+		printf ("S=%s\tF=%s=\tD=%s\tT=%d\tDL=%d\tCS=%c\n", sdup_db [database_line].sha, sdup_db [database_line].filepath, sdup_db [database_line].dataset, sdup_db [database_line].timestamp, database_line, sdflags->c_scheme);
+		}
 	database_line ++;
 	} while (!feof (SMDB_IN_FP));
 fclose (SMDB_IN_FP);
+if (sdflags->c_scheme == BY_TIME)
+	{
+	fprintf (stderr, "\n");
+	}
 
 // Sort section
 // Sort with index by sha then alpha for fFlL
 // Sort with index by sha then time for nNoO
 // Mark duplicates during/after search
 // Database sort section
-swap_made = TRUE;
-while (swap_made == TRUE)
+sdflags->swap_made = TRUE;
+while (sdflags->swap_made == TRUE)
 	{
-	swap_made = FALSE;
+	sdflags->swap_made = FALSE;
 	for (line_index = 0; line_index < database_line - 2; line_index ++)
 		{
-//		printf ("CS=%c\tCL=%s=\tCT=%d\tNL=%s=\tNT=%d\n", choice_scheme, \
-//								sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index].index].timestamp, \
-//								sdup_db [sdup_db [line_index + 1].index].filepath, sdup_db [sdup_db [line_index + 1].index].timestamp);
-		if ((choice_scheme == BY_ALPHA && strcmp (sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index + 1].index].filepath) > 0) \
-			|| (choice_scheme == BY_TIME && sdup_db [sdup_db [line_index].index].timestamp > sdup_db [sdup_db [line_index + 1].index].timestamp))
+		if (sdflags->verbose)
 			{
-			swap_index = sdup_db [line_index + 1].index;
-			sdup_db [line_index + 1].index = sdup_db [line_index].index;
-			sdup_db [line_index].index = swap_index;
-			swap_made = TRUE;
+			printf ("CS=%c\tCL=%s=\tCT=%d\tNL=%s=\tNT=%d\n", sdflags->c_scheme, \
+							sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index].index].timestamp, \
+							sdup_db [sdup_db [line_index + 1].index].filepath, sdup_db [sdup_db [line_index + 1].index].timestamp);
+			}
+		if (strcmp (sdup_db [sdup_db [line_index].index].sha, sdup_db [sdup_db [line_index + 1].index].sha) == 0)
+			{
+			if ((sdflags->c_scheme == BY_ALPHA && strcmp (sdup_db [sdup_db [line_index].index].filepath, sdup_db [sdup_db [line_index + 1].index].filepath) > 0) \
+			|| (sdflags->c_scheme == BY_TIME && sdup_db [sdup_db [line_index].index].timestamp > sdup_db [sdup_db [line_index + 1].index].timestamp))
+				{
+				swap_index = sdup_db [line_index + 1].index;
+				sdup_db [line_index + 1].index = sdup_db [line_index].index;
+				sdup_db [line_index].index = swap_index;
+				sdflags->swap_made = TRUE;
+				}
 			}
 		}
 	}
@@ -276,14 +301,14 @@ for (line_index = 1; line_index < database_line - 2; line_index ++)
 last_line = database_line;
 for (database_line = 0; database_line <= last_line; database_line++)
 	{
-	current_zero_sha = strcmp (sdup_db [sdup_db [database_line].index].sha, SHA_ZERO);
-	if (!(!zero_sha && !current_zero_sha))
+	sdflags->current_zero_sha = strcmp (sdup_db [sdup_db [database_line].index].sha, SHA_ZERO);
+	if (!(!sdflags->zero_sha && !sdflags->current_zero_sha))
 		{					// zero test
 		if (sdup_db [sdup_db [database_line].index].dup_num)	// Dup number not 0
 			{
-			if (sdup_db [sdup_db [database_line].index].dup_num == 1 && (output_choice == ALL_DUPES || output_choice == DROP_FIRST || output_choice == DROP_LAST))	// first duplicate
+			if (sdup_db [sdup_db [database_line].index].dup_num == 1 && (sdflags->o_choice == ALL_DUPES || sdflags->o_choice == DROP_FIRST || sdflags->o_choice == DROP_LAST))	// first duplicate
 				{
-				switch (mark_first)
+				switch (sdflags->mark_first)
 					{
 					case WITH_COLOUR:
 						printf ("%s%s%s", TEXT_YELLOW, sdup_db [sdup_db [database_line].index].filepath, TEXT_RESET);
@@ -294,22 +319,22 @@ for (database_line = 0; database_line <= last_line; database_line++)
 					default:
 						printf ("%s", sdup_db [sdup_db [database_line].index].filepath);
 					}	// end switch
-				if (dataset_out)
+				if (sdflags->dataset_out)
 					{
 					printf ("\t%s", sdup_db [sdup_db [database_line].index].dataset);
 					}
 				printf ("\n");
 				}	// end if dup = 1
-			if (sdup_db [sdup_db [database_line].index].dup_num > 1 && (output_choice == ALL_DUPES || output_choice == KEEP_FIRST\
-					 || output_choice == DROP_LAST || output_choice == KEEP_LAST))	// other duplicates
+			if (sdup_db [sdup_db [database_line].index].dup_num > 1 && (sdflags->o_choice == ALL_DUPES || sdflags->o_choice == KEEP_FIRST\
+					 || sdflags->o_choice == DROP_LAST || sdflags->o_choice == KEEP_LAST))	// other duplicates
 				{
-				switch (output_choice)
+				switch (sdflags->o_choice)
 					{
 					case DROP_LAST:
 						if (sdup_db [sdup_db [database_line + 1].index].dup_num)
 							{
 							printf ("%s", sdup_db [sdup_db [database_line].index].filepath);
-							if (dataset_out)
+							if (sdflags->dataset_out)
 								{
 								printf ("\t%s", sdup_db [sdup_db [database_line].index].dataset);
 								}
@@ -320,7 +345,7 @@ for (database_line = 0; database_line <= last_line; database_line++)
 						if (!sdup_db [sdup_db [database_line + 1].index].dup_num)
 							{
 							printf ("%s", sdup_db [sdup_db [database_line].index].filepath);
-							if (dataset_out)
+							if (sdflags->dataset_out)
 								{
 								printf ("\t%s", sdup_db [sdup_db [database_line].index].dataset);
 								}
@@ -329,7 +354,7 @@ for (database_line = 0; database_line <= last_line; database_line++)
 						break;
 					default:
 						printf ("%s", sdup_db [sdup_db [database_line].index].filepath);
-						if (dataset_out)
+						if (sdflags->dataset_out)
 							{
 							printf ("\t%s", sdup_db [sdup_db [database_line].index].dataset);
 							}
@@ -337,21 +362,24 @@ for (database_line = 0; database_line <= last_line; database_line++)
 					}	// end switch
 //				printf ("%s\n", sdup_db [sdup_db [database_line].index].filepath);
 				}
-			if ((sdup_db [sdup_db [database_line].index].dup_num == 1 && output_choice == ALL_UNIQUE) || !current_zero_sha)	// output first duplicate if all unique
+			if ((sdup_db [sdup_db [database_line].index].dup_num == 1 && sdflags->o_choice == ALL_UNIQUE) || !sdflags->current_zero_sha)	// output first duplicate if all unique
 				{
 				printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, sdup_db [sdup_db [database_line].index].dataset);
 				}
 			}	// end dup found
 			else
 			{	// no dup found
-			if (output_choice == ALL_UNIQUE)
+			if (sdflags->o_choice == ALL_UNIQUE)
 				{
 				printf ("%s\t%s\t%s\n", sdup_db [sdup_db [database_line].index].sha, sdup_db [sdup_db [database_line].index].filepath, sdup_db [sdup_db [database_line].index].dataset);
 				}
 			}	// end else no dup
 		}	// end zero test
 	}	// end for loop
-
+if (sdflags->c_scheme == BY_TIME)
+	{
+	fprintf (stderr, "# %d of %d timestamps found\n", ts_count, database_line);
+	}
 free (sdup_db);	// free memory
 sdup_db = NULL;
 }
