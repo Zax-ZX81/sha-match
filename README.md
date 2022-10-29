@@ -3,13 +3,13 @@ A system for cataloguing and managing files using _SHA256_.
 
 ### Synopsis
 
-__smatch__ [-dimV] _searchlist database_
+__smatch__ [-dimvVz] _searchlist database_
 
 __sfind__ [-finosuvVx] _dataset_
 
 __supdate__ [-dfiUvVx] _database_ [-o update-file]
 
-__sdup__ [-dmuVz] [-fFlLnNoO] _database_
+__sdup__ [-dmuvVz] [-fFlLnNoO] _database_
 
 __scheck__ [V] _search-file_ [-d _database-file_]
 
