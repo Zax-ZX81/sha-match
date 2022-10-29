@@ -3,13 +3,13 @@ A system for cataloguing and managing files using _SHA256_.
 
 ### Synopsis
 
-__smatch__ [dimV] _searchlist database_
+__smatch__ [-dimvVz] _searchlist database_
 
-__sfind__ [finosuvVx] _dataset_
+__sfind__ [-finosuvVx] _dataset_
 
-__supdate__ [dfiUvVx] _database_
+__supdate__ [-dfiUvVx] _database_ [-o update-file]
 
-__sdup__ [dfFlLmuVz] _database_
+__sdup__ [-dmuvVz] [-fFlLnNoO] _database_
 
 __scheck__ [V] _search-file_ [-d _database-file_]
 
@@ -64,15 +64,15 @@ The ___dataset___ column in _s2db_ files has two purposes: one, to keep track of
 __smatch__ loads the _searchlist_ into a struct array, sorted by _SHA256_.  It builds an index of the array, marking the boundaries between the first hex characters of the checksums - sixteen in all.  It then moves through the _database_ one line at a time, finding the correct bracket of checksums in the _searchlist_ array by using the first character of the _database_ line checksum.  So each line of the _database_ is only searched for in a sixteenth of the _searchlist_ array.
 
 #### sfind
-__sfind__ produces the ___datasets___ used by __smatch__ and __scheck__.  Its output is roughly the same as typing `find -type f | xargs sha256sum > dataset.sha256` on the _Linux_ command line.
+__sfind__ produces the ___datasets___ used by the other programs.  Its output is roughly the same as typing `find -type f | xargs sha256sum > dataset.sha256` on the _Linux_ command line.
 
 __sfind__ generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using __-i__ or __-x__, during the building of the file list it will check for all the items in `./sf_filter` and include or exclude them accordingly.
 
 #### supdate
-__supdate__ uses the same feedback file list as __sfind__ to find changes to the filesystem since the ___dataset___ was created.  Previously the only way to update a dataset was to completely redo it with __sfind__.  It uses file _modified_ timestamps to find files updated since the dataset was written.  It also warns of large differences between the original dataset and the update - more than 90% of files deleted or less than 10% retained.  It also sorts lots of things everywhere - the file list alphbetically, the database file list alphbetically then the result by SHA256 sum.  I've doubled the speed of the sort routine by swapping array indexes rather than array entry contents, but it's still slow.
+__supdate__ uses the same feedback file list as __sfind__ to find changes to the filesystem since the ___dataset___ was created.  Previously the only way to update a dataset was to completely redo it with __sfind__.  It uses file _modified_ timestamps to find files added since the dataset was written.  It also warns of large differences between the original dataset and the update - more than 90% of files deleted or less than 10% retained.  It also sorts lots of things everywhere - the file list alphbetically, the database file list alphbetically then the result by SHA256 sum.  I've doubled the speed of the sort routine by swapping array indexes rather than array entry contents, but it's still slow.  While it does a good job of updating files added and deleted from a fileset, sometimes renamed files will cause it confusion - if a filename is changed to that of an existing file there's no way to know that it's new.  For this reason it's best not to use an updated database with __sdup__.
 
 #### sdup
-__sdup__ finds duplicates within a dataset, something __smatch__ won't do.  At the time I originally started __sha-match__ I used _FSLint_ and _Duff_ for finding duplicates, but _FSLint_ no longer appears in the Fedora repository and I find _Duff_ a massive pain in the arse.  So necessity provided an incentive.  Choosing which file to keep amongst a group of duplicates is often a balance between the useful and the confusing.  You want to keep files with meaningful filenames rather than ones with character salad names - but also shed duplicates with (1) near the end of the filename from an inadvertent second download.  And the larger the set of files you're weeding the more blunt the tool becomes.  I'd like to add additional features that would allow detection of things like meaningful names and indexed download multiples, but I'm stuck on how to do it.
+__sdup__ finds duplicates within a dataset, something __smatch__ won't do.  At the time I originally started __sha-match__ I used _FSLint_ and _Duff_ for finding duplicates, but _FSLint_ no longer appears in the Fedora repository and I find _Duff_ a massive pain in the arse.  So necessity provided an incentive.  Choosing which file to keep amongst a group of duplicates is often a balance between the useful and the confusing.  You want to keep files with meaningful filenames rather than ones with character salad names - but also shed duplicates with (1) near the end of the filename from an inadvertent second download.  And the larger the set of files you're weeding the more blunt the tool becomes.  It currently allows choices based on alphabetical and chronological order.  The databases don't store filestamp information so time based choices require the files to be available to read.  I'd like to add additional features that would allow detection of things like meaningful names and indexed download multiples, but I'm stuck on how to do it.
 
 #### scheck
 __scheck__ does the same as __smatch__ only with a single file.  It records the last _database_ it used successfully and will keep using that until another _database_ that passes the verification check is specified.  It will print multiple results if it finds them, showing the ___dataset___ for each.
@@ -83,7 +83,7 @@ __sconvert__ converts a plain _sha256_ file to a _s2db_ file.  It uses the filen
 ### Files
 `sf_filter` is a file listing the names of files/directories in the current directory to be included/excluded from the file search.  Can be generated with `ls  > sf_filter` and then edited as needed.
 
-`.scheck_db` stores the name of the last _database_ file that __scheck__ used sucessfully.  This _database_ will be used until another is specified.
+`~/.scheck_db` stores the name of the last _database_ file that __scheck__ used sucessfully.  This _database_ will be used until another is specified.
 
 _dataset.sha256_ - the two column (separated by two spaces) output from _sha256sum_. 
 
@@ -94,14 +94,14 @@ The search in __smatch__ requires that the _searchlist_ is sorted by _SHA256_.  
 
 ### Portability
 I used only standard _C_ functions for all the programs.  Both __sfind__ and __scheck__ use popen() to get SHA256SUMs - from `sha256sum` in _Linux_ and `certutil` in _Windows_.
-All the programs build in _GNU/Linux_ and _Windows_ (with _MinGW_), and would probably on _Mac_ too, but that's untested.  The output in _Linux_ is coloured; in _Windows_ it's black and white.
+All the programs build in _GNU/Linux_.  I built _Windows_ versions (with _MinGW_) of the early programs.  They'd probably be pretty close building on _Mac_ too, but that's untested.  The output in _Linux_ is coloured; in _Windows_ it's black and white.
 
-I haven't compiled _Windows_ versions for over a year - who knows if they still work.  __sdup__ and __supdate__ have been added since then, so they'll probably fail somehow.
+I haven't compiled _Windows_ versions since the end of 2021 - who knows if they still work.  __sdup__ and __supdate__ have been added since then, so they'll probably fail somehow.
 
 __sfind__ and others use _dirent.h_ to mimic the _GNU/Linux_ `find` command, building a list of files/directories in the current directory to generate checksums for.
 
 ### Bugs
-I'm not a natural coder.  My debugging strategy mainly consists of putting in heaps of _printf_ statements everywhere to try to figure out what the hell is going wrong.  Crashes in these programs now seem to be related to trying to close a file that isn't open or due to my misunderstanding the correct use of _malloc_ or _free_.  __sfind__ sends filenames to `sha256sum` enclosed in double quotes to account for spaces and other non-standard characters, but that sometimes fails - with \` (backtick) for example.
+I'm not a natural coder.  My debugging strategy mainly consists of putting in heaps of _printf_ statements everywhere to try to figure out what the hell is going wrong.  These debugging aids were kept on as verbose mode.  Crashes in these programs now seem to be related to trying to close a file that isn't open or due to my misunderstanding the correct use of _malloc_ or _free_.  __sfind__ sends filenames to `sha256sum` enclosed in double quotes to account for spaces and other non-standard characters, but that sometimes fails - with \` (backtick) for example.
 
 ### Copyleft
 If you want to steal this, I'll meet you in the carpark.
