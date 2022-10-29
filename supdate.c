@@ -123,7 +123,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)		// loop through arguments
 					suflags->filtering = F_EXCL;
 					break;
 				default:
-					printf ("%s# SHA Update [-dfiUvVx] <database file>%s\n", TEXT_YELLOW, TEXT_RESET);
+					printf ("%s# SHA Update [-dfiUvVx] <database file> [-o update-file]%s\n", TEXT_YELLOW, TEXT_RESET);
 					exit (0);
 				}	// END switch
 			}	// END for switch_pos

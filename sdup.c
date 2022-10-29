@@ -65,16 +65,16 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 				case 'd':
 					sdflags->dataset_out = FALSE;
 					break;
-				case KEEP_NEWEST:			// default first choice if more than one specified
+				case KEEP_FIRST:			// default first choice if more than one specified
 					sdflags->o_choice = KEEP_FIRST;
-					sdflags->c_scheme = BY_TIME;
+					sdflags->c_scheme = BY_ALPHA;
 					sdflags->mark_first = NO_MARK;
 					break;
-				case KEEP_FIRST:			// default second choice
+				case KEEP_NEWEST:			// default second choice
 					if (sdflags->o_choice != KEEP_FIRST)
 						{
 						sdflags->o_choice = KEEP_FIRST;
-						sdflags->c_scheme = BY_ALPHA;
+						sdflags->c_scheme = BY_TIME;
 						sdflags->mark_first = NO_MARK;
 						}
 					break;
@@ -144,7 +144,7 @@ for (arg_no = 1; arg_no < argc; arg_no++)	// loop through arguments
 					sdflags->zero_sha = TRUE;
 					break;
 				default:
-					printf ("%s# SHA Dup [dmuVz] {keep choice} <database file>\n", TEXT_YELLOW);
+					printf ("%s# SHA Dup [dmuvVz] {keep choice} <database file>\n", TEXT_YELLOW);
 					printf ("# [fFlLnNoO] use one only to mark which of a group to %sKEEP%s\n", TEXT_RED, TEXT_RESET);
 					printf ("%s#\t\t\t\t\t\t\t Time-based choices require\n", TEXT_YELLOW);
 					printf ("#\t\t\t\t\t\t\t files to be present\n");

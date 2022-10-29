@@ -3,24 +3,24 @@
 .SH NAME
 sha-match \- a system for cataloguing and managing files using SHA256
 .SH SYNOPSIS
-.B smatch
+smatch
 [\fI\,dimVz\/\fR] \fI\,searchlist\/\fR
 \fI\,database\/\fR
 .PP
-.B sfind
+sfind
 [\fI\,finosuvVx\/\fR] \fI\,dataset\/\fR
 .PP
-.B supdate
-[\fI\,dfiUvVx\/\fR] \fI\,database\/\fR
+supdate
+[\fI\,dfiUvVx\/\fR] \fI\,database\/\fR [\fI\,\-o update-file\/\fR]
 .PP
-.B sdup
-[\fI\,dfFlLmuVz\/\fR] \fI\,dataset\/\fR
+sdup
+[\fI\,dmuvVz\/\fR] [\fI\,fFlLnNoO\/\fR] \fI\,dataset\/\fR
 .PP
-.B scheck
+scheck
 [\fI\,V\/\fR] \fI\,search-file\/\fR
 [\fI\,\-d database-file\/\fR]
 .PP
-.B sconvert
+sconvert
 \fISHA256file\fR
 .SH DESCRIPTION
 \fBsha-match\fR uses SHA256 checksums to identify files, cataloguing
@@ -33,76 +33,62 @@ Compares two dataset files \- a \fIsearchlist\fR and a
 \fIsearchlist\fR to \fIstdout\fR.
 \fB-d\fR and \fB-m\fR can be used in combination, \fB-i\fR
 is exclusive.  \fBSMatch\fR - a simple bash script equivalent of \fBsmatch\fR is included.
-.PP
 .TP
-.B \fB-d\fR
+\fB-d\fR
 Print matches from the \fIdatabase\fR.
-.PP
 .TP
-.B \fB-i\fR
+\fB-i\fR
 Print the complement of the search - the files that \fBdon\[cq]t\fR
 match.
 This output is the full two or three field entries for the files from the \fIdatabase\fR
 dataset.
-.PP
 .TP
-.B \fB-m\fR
+\fB-m\fR
 Print all matches for a file if there are multiples.
-.PP
 .TP
-.B \fB-V\fR
+\fB-V\fR
 Print version information.
-.PP
 .TP
-.B \fB-z\fR
+\fB-z\fR
 Show matches with zero file size.  Suppressed by default.  Combine with \fB-m\fR to show all of them.
 .SS sfind
 This generates a dataset for the current directory, equivalent to 'find
 -type f | sha256sum > dataset.sha256'.  \fBSFind\fR - a simple bash script equivalent of \fBsfind\fR is included.
 The default output is a s2db file, but output matching
 \fIsha256sum\fR is available.
-.PP
 .TP
-.B \fB-f\fR
+\fB-f\fR
 Sort file by filepath.
 Default is to sort by \fISHA256\fR.
-.PP
 .TP
-.B \fB-i\fR
+\fB-i\fR
 \fBInclude\fR only entries in 'sf_filter' in file search.
-.PP
 .TP
-.B \fB-n\fR
+\fB-n\fR
 Suppress progress in SHA256 generation phase.
-.PP
 .TP
-.B \fB-o\fR
+\fB-o\fR
 Create two column \fIsha256sum\fR output.
-.PP
 .TP
-.B \fB-s\fR
+\fB-s\fR
 Suppress most messages and print to stdout.
 Don\[cq]t create an output file.
 Default behaviour if no filename given.
-.PP
 .TP
-.B \fB-u\fR
+\fB-u\fR
 Don\[cq]t sort output.
 The sort is a simple bubble sort and very slow.
 Large files are better to be sent to stdout and sorted through a command
 line pipe.
-.PP
 .TP
-.B \fB-v\fR
+\fB-v\fR
 Verbose.
 Print lots of stuff.
-.PP
 .TP
-.B \fB-V\fR
+\fB-V\fR
 Print version information.
-.PP
 .TP
-.B \fB-x\fR
+\fB-x\fR
 \fBExclude\fR entries in 'sf_filter' from file search.
 .PP
 .SS supdate
@@ -110,86 +96,93 @@ This generates an update to an existing dataset for the current directory,
 rather than re-calculating all SHA256SUMs from scratch.
 By default it produces a report on changes without calculating checksums
 or writing results to an s2db file.
-.PP
 .TP
-.B \fB-d\fR
+\fB-d\fR
 Show which entries will be removed from the database by the update.
-.PP
 .TP
-.B \fB-f\fR
+\fB-f\fR
 Force supdate to write the output file.  By default, if there are a lot of
 changes (90+% files deleted or 10-% retained) supdate issues a warning and
 suppresses writing the output file.
-.PP
 .TP
-.B \fB-i\fR
+\fB-i\fR
 \fBInclude\fR only entries in 'sf_filter' in file search.
-.PP
 .TP
-.B \fB-U\fR
+\fB-o update-file\fR
+Write updated database to specified file.  \fB-U\fR is implied.
+.TP
+\fB-U\fR
 Write an updated database file.  Appends '-U' to existing database name.
-.PP
 .TP
-.B \fB-v\fR
-Verbose.
-Print lots of stuff.
-.PP
+\fB-v\fR
+Verbose.  Print lots of stuff.
 .TP
-.B \fB-V\fR
+\fB-V\fR
 Print version information.
-.PP
 .TP
-.B \fB-x\fR
+\fB-x\fR
 \fBExclude\fR entries in 'sf_filter' from file search.
 .PP
 .SS sdup
-Searches for duplicate files within a dataset.  By default it prints a report with the first duplicate in each set highlighted in yellow. The switches \fB-f -F -l -L\fR can be used to choose which combination of duplicates is printed.
-.PP
+Searches for duplicate files within a dataset.  By default it prints a report with the first duplicate in each set highlighted in yellow. The switches \fBfFlL\fR and \fBnNoO\fR can be used to choose which combination of duplicates is printed.
 .TP
-.B \fB-d\fR
+\fB-d\fR
 Don\[cq]t print the dataset column.
-.PP
 .TP
-.B \fB-f\fR
-Print \fBall but\fR the \fBfirst\fR duplicate in each set.
-.PP
-.TP
-.B \fB-F\fR
-Print \fBonly\fR the \fBfirst\fR duplicate in each set.
-.PP
-.TP
-.B \fB-l\fR
-Print \fBall but\fR the \fBlast\fR duplicate in each set
-.PP
-.TP
-.B \fB-L\fR
-Print \fBonly\fR the \fBlast\fR duplicate in each set.
-.PP
-.TP
-.B \fB-m\fR
+\fB-m\fR
 Mark the first duplicate with a hash (#).  The default is to print it in yellow using ANSI colour codes that can interfere with output piped to another command.
-.PP
 .TP
-.B \fB-u\fR
+\fB-u\fR
 Print all unique entries according to their SHA256SUMs in s2db format.  This will include all files with zero size if any are present.
-.PP
 .TP
-.B \fB-V\fR
+\fB-v\fR
+Verbose.  Print lots of stuff.
+.TP
+\fB-V\fR
 Print version information.
-.PP
 .TP
-.B \fB-z\fR
+\fB-z\fR
 Include files with zero file size.  Suppressed by default.
+.TP
+The following options are used to choose which of the duplicates to \fBKEEP\fR.  Only one can be used at a time.
+.TP
+.TQ
+\fB-f -F -l -L\fR are based on the alphabetical order of the files.  This is the safest option, and the default if more than one alphabetical choice is given.
+.IP
+\fB-f\fR
+Print \fBall but\fR the \fBfirst\fR duplicate in each set.
+.IP
+\fB-F\fR
+Print \fBonly\fR the \fBfirst\fR duplicate in each set.
+.IP
+\fB-l\fR
+Print \fBall but\fR the \fBlast\fR duplicate in each set
+.IP
+\fB-L\fR
+Print \fBonly\fR the \fBlast\fR duplicate in each set.
+.TP
+\fB-n -N -o -O\fR are based on the timestamps of files.  In order for these choices to work the files need to be in place.
+.IP
+\fB-n\fR
+Print \fBall but\fR the \fBnewest\fR duplicate in each set.  This is the default if more than one timestamp choice is given.
+.IP
+\fB-N\fR
+Print \fBonly\fR the \fBnewest\fR duplicate in each set.
+.IP
+\fB-o\fR
+Print \fBall but\fR the \fBoldest\fR duplicate in each set
+.IP
+\fB-O\fR
+Print \fBonly\fR the \fBoldest\fR duplicate in each set.
+
 .SS scheck
 \fIscheck\fR searches for a single file in a database.  If no database is specified,
 the last verified database is used.
-.PP
 .TP
-.B \fB-d database-file\fR
+\fB-d database-file\fR
 Specify the database to search.  Databases should given with a full pathname to avoid 'not found' errors when the CWD changes.
-.PP
 .TP
-.B \fB-V\fR
+\fB-V\fR
 Print version information.
 .PP
 .SS sconvert
@@ -198,21 +191,20 @@ This converts a plain \fISHA256\fR file to a \fIs2db\fR file.
 .PP
 .SH FILES
 .TP
-.B sf_filter
+sf_filter
 File listing the names of files/directories to be included/excluded from the file search.
 Can be generated with 'ls > sf_filter' and then edited as needed.
 Any directories in \fBsf_filter\fR will include/exclude all items to maximum depth in that directory.
 Files/directories multiple directories deep can be picked out, ie .cache/mozilla/firefox can be used to exclude the Firefox cache from a user directory.
 .TP
-.B ~/.scheck_db
+~/.scheck_db
 File that stores the name of the last database file that \fIscheck\fR used sucessfully.
 This database will be used until another is specified.
 .TP
-.B dataset.sha256
+dataset.sha256
 Two column (separated by two spaces) output from \fIsha256sum\fR.
-.PP
 .TP
-.B dataset.s2db
+dataset.s2db
 Three column output, tab separated.
 1: SHA256, 2: filepath, 3: dataset.
 .PP
