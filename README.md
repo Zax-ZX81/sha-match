@@ -3,13 +3,13 @@ A system for cataloguing and managing files using _SHA256_.
 
 ### Synopsis
 
-__smatch__ [dimV] _searchlist database_
+__smatch__ [-dimV] _searchlist database_
 
-__sfind__ [finosuvVx] _dataset_
+__sfind__ [-finosuvVx] _dataset_
 
-__supdate__ [dfiUvVx] _database_
+__supdate__ [-dfiUvVx] _database_ [-o update-file]
 
-__sdup__ [dfFlLmuVz] _database_
+__sdup__ [-dmuVz] [-fFlLnNoO] _database_
 
 __scheck__ [V] _search-file_ [-d _database-file_]
 
@@ -69,7 +69,7 @@ __sfind__ produces the ___datasets___ used by __smatch__ and __scheck__.  Its ou
 __sfind__ generates a list of files/directories in the current directory that then feeds back on itself as it works down its own list.  The directories and other non-standard files are then removed with the regular files serving as the list for the checksum phase of the program.  When using __-i__ or __-x__, during the building of the file list it will check for all the items in `./sf_filter` and include or exclude them accordingly.
 
 #### supdate
-__supdate__ uses the same feedback file list as __sfind__ to find changes to the filesystem since the ___dataset___ was created.  Previously the only way to update a dataset was to completely redo it with __sfind__.  It uses file _modified_ timestamps to find files updated since the dataset was written.  It also warns of large differences between the original dataset and the update - more than 90% of files deleted or less than 10% retained.  It also sorts lots of things everywhere - the file list alphbetically, the database file list alphbetically then the result by SHA256 sum.  I've doubled the speed of the sort routine by swapping array indexes rather than array entry contents, but it's still slow.
+__supdate__ uses the same feedback file list as __sfind__ to find changes to the filesystem since the ___dataset___ was created.  Previously the only way to update a dataset was to completely redo it with __sfind__.  It uses file _modified_ timestamps to find files updated since the dataset was written.  It also warns of large differences between the original dataset and the update - more than 90% of files deleted or less than 10% retained.  It also sorts lots of things everywhere - the file list alphbetically, the database file list alphbetically then the result by SHA256 sum.  I've doubled the speed of the sort routine by swapping array indexes rather than array entry contents, but it's still slow.  While it does a good job 
 
 #### sdup
 __sdup__ finds duplicates within a dataset, something __smatch__ won't do.  At the time I originally started __sha-match__ I used _FSLint_ and _Duff_ for finding duplicates, but _FSLint_ no longer appears in the Fedora repository and I find _Duff_ a massive pain in the arse.  So necessity provided an incentive.  Choosing which file to keep amongst a group of duplicates is often a balance between the useful and the confusing.  You want to keep files with meaningful filenames rather than ones with character salad names - but also shed duplicates with (1) near the end of the filename from an inadvertent second download.  And the larger the set of files you're weeding the more blunt the tool becomes.  I'd like to add additional features that would allow detection of things like meaningful names and indexed download multiples, but I'm stuck on how to do it.
