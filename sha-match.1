@@ -4,20 +4,20 @@
 sha-match \- a system for cataloguing and managing files using SHA256
 .SH SYNOPSIS
 smatch
-[\fI\,dimVz\/\fR] \fI\,searchlist\/\fR
+[\fI\,-dimVz\/\fR] \fI\,searchlist\/\fR
 \fI\,database\/\fR
 .PP
 sfind
-[\fI\,finosuvVx\/\fR] \fI\,dataset\/\fR
+[\fI\,-finosuvVx\/\fR] \fI\,dataset\/\fR
 .PP
 supdate
-[\fI\,dfiUvVx\/\fR] \fI\,database\/\fR [\fI\,\-o update-file\/\fR]
+[\fI\,-dfiUvVx\/\fR] \fI\,database\/\fR [\fI\,\-o update-file\/\fR]
 .PP
 sdup
-[\fI\,dmuvVz\/\fR] [\fI\,fFlLnNoO\/\fR] \fI\,dataset\/\fR
+[\fI\,-dmuvVz\/\fR] [\fI\,-fFlLnNoO\/\fR] \fI\,dataset\/\fR
 .PP
 scheck
-[\fI\,V\/\fR] \fI\,search-file\/\fR
+[\fI\,-V\/\fR] \fI\,search-file\/\fR
 [\fI\,\-d database-file\/\fR]
 .PP
 sconvert
@@ -124,7 +124,7 @@ Print version information.
 \fBExclude\fR entries in 'sf_filter' from file search.
 .PP
 .SS sdup
-Searches for duplicate files within a dataset.  By default it prints a report with the first duplicate in each set highlighted in yellow. The switches \fBfFlL\fR and \fBnNoO\fR can be used to choose which combination of duplicates is printed.
+Searches for duplicate files within a dataset.  By default it prints a report with the first duplicate in each set highlighted in yellow. The switches \fBfFlL\fR and \fBnNoO\fR can be used to choose which combination of duplicates is printed.  It's best to use this on a dataset freshly built with \fBsfind\fR - using \fBsdup\fR with datasets modified by \fBsupdate\fR can produce unreliable results.
 .TP
 \fB-d\fR
 Don\[cq]t print the dataset column.
@@ -144,36 +144,28 @@ Print version information.
 \fB-z\fR
 Include files with zero file size.  Suppressed by default.
 .TP
-The following options are used to choose which of the duplicates to \fBKEEP\fR.  Only one can be used at a time.
+The following options are used to choose which of the duplicates to \fBKEEP\fR.  Only one can be used at a time.  It will print a list of the files to be discarded after keeping the specified choice.
 .TP
 .TQ
-\fB-f -F -l -L\fR are based on the alphabetical order of the files.  This is the safest option, and the default if more than one alphabetical choice is given.
+\fB-f -F -l -L\fR are based on the alphabetical order of the files.
 .IP
-\fB-f\fR
-Print \fBall but\fR the \fBfirst\fR duplicate in each set.
+\fB-f\fR   Print \fBall but\fR the \fBfirst\fR duplicate in each set.  This is the safest option, and the default if more than one alphabetical choice is given.
 .IP
-\fB-F\fR
-Print \fBonly\fR the \fBfirst\fR duplicate in each set.
+\fB-F\fR   Print \fBonly\fR the \fBfirst\fR duplicate in each set.
 .IP
-\fB-l\fR
-Print \fBall but\fR the \fBlast\fR duplicate in each set
+\fB-l\fR   Print \fBall but\fR the \fBlast\fR duplicate in each set
 .IP
-\fB-L\fR
-Print \fBonly\fR the \fBlast\fR duplicate in each set.
+\fB-L\fR   Print \fBonly\fR the \fBlast\fR duplicate in each set.
 .TP
 \fB-n -N -o -O\fR are based on the timestamps of files.  In order for these choices to work the files need to be in place.
 .IP
-\fB-n\fR
-Print \fBall but\fR the \fBnewest\fR duplicate in each set.  This is the default if more than one timestamp choice is given.
+\fB-n\fR   Print \fBall but\fR the \fBnewest\fR duplicate in each set.  This is the default if more than one timestamp choice is given.
 .IP
-\fB-N\fR
-Print \fBonly\fR the \fBnewest\fR duplicate in each set.
+\fB-N\fR   Print \fBonly\fR the \fBnewest\fR duplicate in each set.
 .IP
-\fB-o\fR
-Print \fBall but\fR the \fBoldest\fR duplicate in each set
+\fB-o\fR   Print \fBall but\fR the \fBoldest\fR duplicate in each set
 .IP
-\fB-O\fR
-Print \fBonly\fR the \fBoldest\fR duplicate in each set.
+\fB-O\fR   Print \fBonly\fR the \fBoldest\fR duplicate in each set.
 
 .SS scheck
 \fIscheck\fR searches for a single file in a database.  If no database is specified,
