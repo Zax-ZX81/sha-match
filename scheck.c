@@ -24,7 +24,7 @@
 #define DB_LOCATION "/.scheck_db"
 #endif
 
-#if __x86_64__
+#if __windows__
 #define DB_LOCATION "\\.scheck_db"
 #endif
 
@@ -58,7 +58,7 @@ strcpy (database_location, getenv ("HOME"));
 strcat (database_location, DB_LOCATION);
 #endif
 
-#if __x86_64__
+#if __windows__
 strcpy (database_location, getenv ("USERPROFILE"));
 strcat (database_location, DB_LOCATION);
 #endif
@@ -142,11 +142,11 @@ strcpy (file_to_check->filepath, search_filename);		// enter filepath into field
 strcpy (file_to_check->dataset, "");				// dataset for search file always blank
 strcpy (sha_command, SHA_CMD);					// enter OS specific command
 strcat (sha_command, enquote (file_to_check->filepath));	// add filepath
-#if __x86_64__
+#if __windows__
 	strcat (sha_command, SHA_CMD_ARG);			// add argument to end of certutil
 #endif
 SHA_PIPE = popen (sha_command, "r");				// send SHA256SUM command and arguments
-#if __x86_64__
+#if __windows__
 	fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);		// discard first line from certutil
 #endif
 fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);			// receive reply

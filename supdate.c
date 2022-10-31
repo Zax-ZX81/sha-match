@@ -547,10 +547,8 @@ while (swap_made == TRUE)
 #	The output of CertUtil does also not always
 #	return the same line terminators.
 #
-#	If compilation isn't working, pay attention
-#	to #if __x86_64__ and CR/LF and RET #defs
-#	at the beginning of SMLib.h and sha_verify ()
-#	in SMLib.c.
+#	If compilation isn't working, see SMLib.h
+#	and SMLib.c.
 #
 ########################################################*/
 
@@ -568,11 +566,11 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 			printf ("#    Calculating SHA for %s\n", uf_sort_list [uf_sort_list [file_index].index].filepath);
 			strcpy (sha_command, SHA_CMD);				// compose command
 			strcat (sha_command, enquote (uf_sort_list [uf_sort_list [file_index].index].filepath));
-	#if __x86_64__
+	#if __windows__
 			strcat (sha_command, SHA_CMD_ARG);                      // add argument to end of certutil
 	#endif
 			SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
-	#if __x86_64__
+	#if __windows__
 			fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);             // discard first line from certutil
 	#endif
 			fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
@@ -634,11 +632,11 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 				printf ("# Re-calculating SHA for %s\n", uf_sort_list [uf_sort_list [file_index].index].filepath);
 				strcpy (sha_command, SHA_CMD);				// compose command
 				strcat (sha_command, enquote (uf_sort_list [uf_sort_list [file_index].index].filepath));
-		#if __x86_64__
+		#if __windows__
 				strcat (sha_command, SHA_CMD_ARG);                      // add argument to end of certutil
 		#endif
 				SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
-		#if __x86_64__
+		#if __windows__
 				fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);             // discard first line from certutil
 		#endif
 				fgets (sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply

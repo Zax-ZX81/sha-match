@@ -484,7 +484,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 							sfind_db [line_index].filesize, file_progress);
 		}
 
-#if __x86_64__							// ### Windows SHA256 generation ###
+#if __windows__							// ### Windows SHA256 generation ###
 	if (sfind_db [line_index].filesize == 0)		// handle zero file size because of certutil failure
 		{
 		strcpy (sha_line, SHA_ZERO);			// insert zero SHA256SUM

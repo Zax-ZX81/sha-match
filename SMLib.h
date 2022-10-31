@@ -121,11 +121,15 @@
 #
 ########################################################*/
 
+#if defined __x86_64__ && !defined __linux__
+#define __windows__ 1
+#endif
+
 #if __linux__
 #define SHA_CMD "sha256sum "
 #endif
 
-#if __x86_64__
+#if __windows__
 #define SHA_CMD "certutil -hashfile "
 #define SHA_CMD_ARG " sha256"
 #endif
@@ -139,7 +143,7 @@
 #define TEXT_RED "\33[1m\33[91m"
 #endif
 
-#if __x86_64__
+#if __windows__
 #define TEXT_RESET ""
 #define TEXT_YELLOW ""
 #define TEXT_BLUE ""
