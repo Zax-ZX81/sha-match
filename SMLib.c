@@ -6,6 +6,11 @@
  *                             *
  * * * * * * * * * * * * * * * */
 
+/*#################################
+#	See below for Windows
+#	compilation issues
+##################################*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +37,9 @@ for (char_index = 0; char_index < SHA_LENGTH; char_index ++)
 		return (UNKNOWN_TYPE);
 		}
 	}
-//printf (">%s<__%d\t%d_%d__\n", fileline, char_index, fileline [char_index - 1], fileline [char_index]);
+
+//printf (">%s<", fileline);			// ### uncomment this to pipe stdout to a file to check
+						// ### which line terminators CertUtil is using
 if (fileline [char_index] == SPACE_CHAR)
 	{
 	return (SHA256_TYPE);
@@ -41,7 +48,7 @@ if (fileline [char_index] == TAB_CHAR)
 	{
 	return (S2DB_TYPE);
 	}
-if (fileline [char_index] == RET_CHAR)
+if (fileline [char_index] == CGE_RET)		// ### use CGE_RET or RET_CHAR depending on CertUtil input
 	{
 	return (CERTUTIL_SHA256);
 	}

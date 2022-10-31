@@ -8,19 +8,23 @@
  *                               *
  * * * * * * * * * * * * * * * * */
 
+/*#################################
+#	See below for Windows
+#	compilation issues
+##################################*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "SMLib.h"
 
 #define PROG_VERSION "0.40"
-#define SHA_CMD "sha256sum "
 
 #if __linux__
 #define DB_LOCATION "/.scheck_db"
 #endif
 
-#if _WIN32
+#if __x86_64__
 #define DB_LOCATION "\\.scheck_db"
 #endif
 
@@ -54,7 +58,7 @@ strcpy (database_location, getenv ("HOME"));
 strcat (database_location, DB_LOCATION);
 #endif
 
-#if _WIN32
+#if __x86_64__
 strcpy (database_location, getenv ("USERPROFILE"));
 strcat (database_location, DB_LOCATION);
 #endif
@@ -118,13 +122,34 @@ if (FILE_TO_CHECK_FP == NULL)
 	exit_error ("Can't find file: ", search_filename);
 	}
 
+/*######################################################
+#
+#	FOR COMPILATION IN WINDOWS
+#
+#	The OS identifier used in the #if can vary
+#	by compiler.
+#
+#	The output of CertUtil does also not always
+#	return the same line terminators.
+#
+#	If compilation isn't working, see
+#	SMLib.h and SMLib.c.
+#
+########################################################*/
+
 // Get search file sha section
-strcpy (file_to_check->filepath, search_filename);	// enter filepath into field
-strcpy (file_to_check->dataset, "");			// dataset for search file always blank
-strcpy (sha_command, SHA_CMD);
-strcat (sha_command, enquote (file_to_check->filepath));
-SHA_PIPE = popen (sha_command, "r");			// send SHA256SUM command and arguments
-fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);		// receive reply
+strcpy (file_to_check->filepath, search_filename);		// enter filepath into field
+strcpy (file_to_check->dataset, "");				// dataset for search file always blank
+strcpy (sha_command, SHA_CMD);					// enter OS specific command
+strcat (sha_command, enquote (file_to_check->filepath));	// add filepath
+#if __x86_64__
+	strcat (sha_command, SHA_CMD_ARG);			// add argument to end of certutil
+#endif
+SHA_PIPE = popen (sha_command, "r");				// send SHA256SUM command and arguments
+#if __x86_64__
+	fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);		// discard first line from certutil
+#endif
+fgets(sha_line, FILELINE_LENGTH, SHA_PIPE);			// receive reply
 fclose (SHA_PIPE);
 if (sha_verify (sha_line))					// verify SHA256SUM of search file
 	{

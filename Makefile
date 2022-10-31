@@ -23,5 +23,6 @@ sdup: sdup.c SMLib.c
 supdate: supdate.c SMLib.c
 	$(CC) -o bin/supdate supdate.c SMLib.c $(CFLAGS)
 
+# install for Linux only
 install:
 	cp -fv bin/smatch bin/sfind bin/sconvert bin/scheck bin/sdup bin/supdate sha-match.1 ~/bin/

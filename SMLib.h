@@ -6,6 +6,11 @@
  *                             *
  * * * * * * * * * * * * * * * */
 
+/*#################################
+#	See below for Windows
+#	compilation issues
+##################################*/
+
 /*Binaries*/
 #define TRUE 1
 #define FALSE 0
@@ -15,8 +20,8 @@
 /*Characters and Strings*/
 #define NULL_TERM '\0'
 #define TAB_CHAR 9
-#define RET_CHAR 10
-#define CGE_RET 13
+#define RET_CHAR 10		// ### These are used for line endings,
+#define CGE_RET 13		// ### including for CertUtil output
 #define SPACE_CHAR 32
 #define NULL_STRING ""
 #define TWO_SPACES "  "
@@ -100,15 +105,27 @@
 #define SHA_OFFSET SHA_LENGTH + 2
 #define SHA_ZERO "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n"
 
-#if __linux__
 #define DIR_TYPE 4
 #define FILE_TYPE 8
+
+/*######################################################
+#
+#	FOR COMPILATION IN WINDOWS
+#
+#	The OS identifier used in the #if can vary
+#	by compiler.
+#
+#	If compilation isn't working, pay attention
+#	to #if __x86_64__ and CR/LF and RET #defs
+#	used for sha_verify () in SMLib.c.
+#
+########################################################*/
+
+#if __linux__
 #define SHA_CMD "sha256sum "
 #endif
 
-#if _WIN32
-#define DIR_TYPE 16
-#define FILE_TYPE 0
+#if __x86_64__
 #define SHA_CMD "certutil -hashfile "
 #define SHA_CMD_ARG " sha256"
 #endif
@@ -122,11 +139,12 @@
 #define TEXT_RED "\33[1m\33[91m"
 #endif
 
-#if _WIN32
+#if __x86_64__
 #define TEXT_RESET ""
 #define TEXT_YELLOW ""
 #define TEXT_BLUE ""
 #define TEXT_ORANGE ""
+#define TEXT_RED ""
 #endif
 
 struct sha_database

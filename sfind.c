@@ -8,6 +8,11 @@
  *                               *
  * * * * * * * * * * * * * * * * */
 
+/*#################################
+#	See below for Windows
+#	compilation issues
+##################################*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -440,6 +445,21 @@ if (sfflags->filtering)
 
 chdir (C_W_D);		// go back to the starting directory
 
+/*######################################################
+#
+#	FOR COMPILATION IN WINDOWS
+#
+#	The OS identifier used in the #if can vary
+#	by compiler.
+#
+#	The output of CertUtil does also not always
+#	return the same line terminators.
+#
+#	If compilation isn't working, see
+#	SMLib.h and SMLib.c.
+#
+########################################################*/
+
 // SHA256SUM generation section
 if (sfflags->std_out == SW_OFF)
 	{
@@ -464,7 +484,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 							sfind_db [line_index].filesize, file_progress);
 		}
 
-#if _WIN32							// ### Windows SHA256 generation ###
+#if __x86_64__							// ### Windows SHA256 generation ###
 	if (sfind_db [line_index].filesize == 0)		// handle zero file size because of certutil failure
 		{
 		strcpy (sha_line, SHA_ZERO);			// insert zero SHA256SUM
