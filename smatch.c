@@ -30,6 +30,9 @@ int searchlist_alloc_size = DATABASE_INITIAL_SIZE;
 int line_index;
 int database_ferr;			// database file error
 int swap_index;
+int hex_idx;
+int hex_char;
+int hex_lookup_offset;
 int chr_idx;
 
 char switch_chr;					// args section
@@ -39,9 +42,6 @@ char database_filename [FILEPATH_LENGTH] = "";
 char fileline [FILELINE_LENGTH];			// input line
 char database_sha_prev [SHA_LENGTH + 1];		// SHA256SUM of previous database line
 char output_line [FILEPATH_LENGTH] = "";		// output line
-char hex_idx;
-char hex_char;
-char hex_lookup_offset;
 char swap_made = TRUE;
 char sort_need_check = TRUE;
 
@@ -55,9 +55,9 @@ hex_lookup = (struct hex_lookup_line *) malloc (sizeof (struct hex_lookup_line) 
 
 for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// initialise hex lookup table
 	{
-	hex_lookup [(int) hex_idx].idx = hex_string [(int) hex_idx];
-	hex_lookup [(int) hex_idx].first = 0;
-	hex_lookup [(int) hex_idx].last = 0;
+	hex_lookup [hex_idx].idx = hex_string [hex_idx];
+	hex_lookup [hex_idx].first = 0;
+	hex_lookup [hex_idx].last = 0;
 	}
 
 // Arguments section
@@ -221,26 +221,26 @@ hex_idx = 0;
 for (line_index = 0; line_index < searchlist_lines; line_index ++)	// build search list index - first pass
 	{
 	hex_char = ssort_db [ssort_db [line_index].index].sha [0];	// get first hex character of SHA256SUM
-	while (hex_lookup [(int) hex_idx].idx < hex_char)		// skip missing hex chars
+	while (hex_lookup [hex_idx].idx < hex_char)		// skip missing hex chars
 		{
 		hex_idx ++;
 		}
-	if (hex_char == hex_lookup [(int) hex_idx].idx && hex_lookup [(int) hex_idx].first == 0)
+	if (hex_char == hex_lookup [hex_idx].idx && hex_lookup [hex_idx].first == 0)
 		{
-		hex_lookup [(int) hex_idx].first = line_index + 1;	// set first line in set
+		hex_lookup [hex_idx].first = line_index + 1;	// set first line in set
 		hex_idx ++;
 		}
 	}
 for (hex_idx = 0; hex_idx < 16; hex_idx ++)		// build search list index - second pass
 	{
-	if (hex_lookup [(int) hex_idx].first != 0)
+	if (hex_lookup [hex_idx].first != 0)
 		{
 		hex_lookup_offset = 1;
 		while (hex_lookup [hex_idx - hex_lookup_offset].first == 0)	// skip missing hex chars
 			{
 			hex_lookup_offset ++;
 			}
-		hex_lookup [hex_idx - hex_lookup_offset].last = hex_lookup [(int) hex_idx].first - 1; // set last line in set
+		hex_lookup [hex_idx - hex_lookup_offset].last = hex_lookup [hex_idx].first - 1; // set last line in set
 		}
 	}
 hex_lookup [hex_idx - 1].last = line_index;		// set last line
@@ -275,7 +275,7 @@ do
 			separate_fields (sha_db->sha, sha_db->filepath, sha_db->dataset, fileline);
 			}
 		hex_char = hex_to_dec (sha_db->sha [0]);			// get hex character from database target
-		for (search_index = hex_lookup [(int) hex_char].first - 1; search_index <= hex_lookup [(int) hex_char].last; search_index ++)
+		for (search_index = hex_lookup [hex_char].first - 1; search_index <= hex_lookup [hex_char].last; search_index ++)
 			{										// loop through only one hex bracket
 			if (!strcmp (ssort_db [ssort_db [search_index].index].sha, sha_db->sha))	// SHA256SUMs match
 				{

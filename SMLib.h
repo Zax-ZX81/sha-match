@@ -121,7 +121,7 @@
 #
 ########################################################*/
 
-#if defined __x86_64__ && !defined __linux__
+#if (defined _WIN32 || defined __WIN32__ || defined _WIN64 || defined __WIN64__ || defined _CYGWIN || defined __CYGWIN__) && !defined __linux__
 #define __windows__ 1
 #endif
 
