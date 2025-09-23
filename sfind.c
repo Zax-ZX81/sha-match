@@ -1,12 +1,12 @@
-/* * * * * * * * * * * * * * * * *
- *                               *
- *       SHA-Find 0.51           *
- *                               *
- *       2022-10-22              *
- *                               *
- *       Zax                     *
- *                               *
- * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * *
+ *                           *
+ *       sfind 0.6           *
+ *                           *
+ *       2025-09-23          *
+ *                           *
+ *       Zax                 *
+ *                           *
+ * * * * * * * * * * * * * * */
 
 /*#################################
 #	See below for Windows
@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.51"
+#define PROG_VERSION "0.6"
 #define FILTER_PROG_NAME "SFind"
 
 char filter_line_check (char *filter_line);
@@ -238,17 +238,21 @@ if (DIR_PATH != NULL)
 	{
 	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
 		{
-		switch (dir_ents->d_type)
+		stat (dir_ents->d_name, &file_stat);
+		if (file_stat.st_mode & S_IFREG)
 			{
-			case FILE_TYPE:							// set type to file
-				find_list [find_list_write].object_type = T_FIL;
-				break;
-			case DIR_TYPE:							// set type to directory
-				find_list [find_list_write].object_type = T_DIR;
-				break;
-			default:							// mark as unneeded type
-				find_list [find_list_write].object_type = T_REJ;
-				break;
+			find_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
+			}
+			else
+			{
+			if (file_stat.st_mode & S_IFDIR)
+				{
+				find_list [find_list_write].object_type = DIR_ENTRY;	// set type to directory
+				}
+				else
+				{
+				find_list [find_list_write].object_type = UNKNOWN_ENTRY;	// mark as unneeded type
+				}
 			}
 		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
 			&& strcmp (dir_ents->d_name, database_filename)))
@@ -290,18 +294,23 @@ while (find_list_read < find_list_write)
 			{
 			while ((dir_ents = readdir (DIR_PATH)))			// get directory listing
 				{
-				switch (dir_ents->d_type)
+				stat (dir_ents->d_name, &file_stat);
+				if (file_stat.st_mode & S_IFREG)
 					{
-					case FILE_TYPE:						// set type to file
-						find_list [find_list_write].object_type = FILE_ENTRY;
-						break;
-					case DIR_TYPE:						// set type to directory
-						find_list [find_list_write].object_type = DIR_ENTRY;
-						break;
-					default:						// mark as unneeded type
-						find_list [find_list_write].object_type = UNKNOWN_ENTRY;
-						break;
+					find_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
 					}
+					else
+					{
+					if (file_stat.st_mode & S_IFDIR)
+						{
+						find_list [find_list_write].object_type = DIR_ENTRY;	// set type to directory
+						}
+						else
+						{
+						find_list [find_list_write].object_type = UNKNOWN_ENTRY;	// mark as unneeded type
+						}
+					}
+//fprintf (stderr, "DTP\tN=%s\tT=%c\n", dir_ents->d_name, find_list [find_list_write].object_type);
 				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 					{
 					find_list [find_list_write].object_type = T_REJ;	// filter out "." and ".." from search
@@ -480,7 +489,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 		}
 	if (sfflags->verbose)
 		{
-		fprintf (stderr, "FST=%u\tFSM=%f\tFS=%u\tFP=%6.2f\n", file_size_total, file_size_mult, \
+		fprintf (stderr, "FST=%lu\tFSM=%f\tFS=%lu\tFP=%6.2f\n", file_size_total, file_size_mult, \
 							sfind_db [line_index].filesize, file_progress);
 		}
 
@@ -513,7 +522,7 @@ for (line_index = 0; line_index < database_index; line_index ++)
 		strcpy (sfind_db [line_index].dataset, database_dataset);
 		if (sfflags->verbose)
 			{
-			fprintf (stderr, "Size=%u\t%s\n", sfind_db [line_index].filesize, sha_line);
+			fprintf (stderr, "Size=%lu\t%s\n", sfind_db [line_index].filesize, sha_line);
 			}
 		}
 		else
