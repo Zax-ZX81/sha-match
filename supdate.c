@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * *
  *                               *
- *         zfind 0.521           *
+ *         supdate 0.6           *
  *                               *
  *         2022-10-22            *
  *                               *
@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include "SMLib.h"
 
-#define PROG_VERSION "0.521"
+#define PROG_VERSION "0.6"
 #define FILTER_PROG_NAME "SUpdate"
 
 char filter_line_check (char *filter_line);
@@ -241,17 +241,21 @@ if (DIR_PATH != NULL)
 	{
 	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
 		{
-		switch (dir_ents->d_type)
+		stat (dir_ents->d_name, &file_stat);
+		if (file_stat.st_mode & S_IFREG)
 			{
-			case FILE_TYPE:						// set type to file
-				ufind_list [find_list_write].object_type = T_FIL;
-				break;
-			case DIR_TYPE:						// set type to directory
-				ufind_list [find_list_write].object_type = T_DIR;
-				break;
-			default:						// mark as unneeded type
-				ufind_list [find_list_write].object_type = T_REJ;
-				break;
+			ufind_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
+			}
+			else
+			{
+			if (file_stat.st_mode & S_IFDIR)
+				{
+				ufind_list [find_list_write].object_type = DIR_ENTRY;	// set type to directory
+				}
+				else
+				{
+				ufind_list [find_list_write].object_type = UNKNOWN_ENTRY;	// mark as unneeded type
+				}
 			}
 		if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV) \
 			&& strcmp (dir_ents->d_name, database_in_filename)))
@@ -294,17 +298,21 @@ while (find_list_read < find_list_write)
 			{
 			while ((dir_ents = readdir (DIR_PATH)))			// get directory listing
 				{
-				switch (dir_ents->d_type)
+				stat (dir_ents->d_name, &file_stat);
+				if (file_stat.st_mode & S_IFREG)
 					{
-					case FILE_TYPE:						// set type to file
-						ufind_list [find_list_write].object_type = FILE_ENTRY;
-						break;
-					case DIR_TYPE:						// set type to directory
-						ufind_list [find_list_write].object_type = DIR_ENTRY;
-						break;
-					default:						// mark as unneeded type
-						ufind_list [find_list_write].object_type = UNKNOWN_ENTRY;
-						break;
+					ufind_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
+					}
+					else
+					{
+					if (file_stat.st_mode & S_IFDIR)
+						{
+						ufind_list [find_list_write].object_type = DIR_ENTRY;	// set type to directory
+						}
+						else
+						{
+						ufind_list [find_list_write].object_type = UNKNOWN_ENTRY;	// mark as unneeded type
+						}
 					}
 				if (!(strcmp (dir_ents->d_name, DIR_CURRENT) && strcmp (dir_ents->d_name, DIR_PREV)))
 					{
@@ -410,7 +418,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		}
 	if (suflags->verbose)
 		{
-		printf ("FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%d\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
+		printf ("FSLcs=%d\tFSLi=%d\tUFLf=%s\tUFLs=%ld\tUFLt=%d\n", fs_list_alloc_size, fs_list_index, \
 									ufind_list [find_list_read].filepath, \
 									ufind_list [find_list_read].filesize, \
 									ufind_list [find_list_read].timestamp);
@@ -674,7 +682,7 @@ while (file_index <= fs_list_index - 1 && db_index < database_index - 1)
 						uf_sort_list [uf_sort_list [file_index].index].filepath, \
 						db_index, \
 						ssort_db [ssort_db [db_index].index].filepath, su_diff->same);
-			printf ("FS=%d\tFT=%d\tDT=%d\tTD=%d\n", uf_sort_list [uf_sort_list [file_index].index].filesize, \
+			printf ("FS=%ld\tFT=%d\tDT=%d\tTD=%d\n", uf_sort_list [uf_sort_list [file_index].index].filesize, \
 								uf_sort_list [uf_sort_list [file_index].index].timestamp, \
 								database_timestamp, uf_sort_list [uf_sort_list [file_index].index].timestamp - database_timestamp);
 			}
