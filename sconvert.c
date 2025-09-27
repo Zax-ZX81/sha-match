@@ -14,6 +14,7 @@
 #include "SMLib.h"
 
 #define PROG_VERSION "0.40"
+#define CURR_DIR 2
 
 int main (int argc, char *argv [])
 
@@ -77,7 +78,7 @@ do
 			{
 			strncpy (ssort_db->sha, fileline, SHA_LENGTH);				// load SHA256SUM into database struct
 			ssort_db->sha [SHA_LENGTH] = NULL_TERM;					// add NULL terminator
-			strcpy (ssort_db->filepath, fileline + SHA_OFFSET);			// load filepath into database struct
+			strcpy (ssort_db->filepath, fileline + SHA_OFFSET + CURR_DIR);			// load filepath into database struct
 			ssort_db->filepath [strlen (ssort_db->filepath) - 1] = NULL_TERM;	// add NULL terminator
 			fprintf (SSDB_OUT_FP, "%s\n", three_fields (ssort_db->sha, ssort_db->filepath, ssort_db->dataset));
 			}		// write database struct contents to output file
@@ -98,9 +99,3 @@ fclose (SSDB_IN_FP);
 fclose (SSDB_OUT_FP);
 
 }
-
-
-
-
-
-
