@@ -182,7 +182,7 @@ if (sfflags->filtering)
 			switch (filter_check)
 				{
 				case 1:
-					if (stat (filter_list [filter_index].filepath, &file_stat) == 0)
+					if (lstat (filter_list [filter_index].filepath, &file_stat) == 0)
 						{
 						if (file_stat.st_mode & S_IFREG)
 							{
@@ -238,7 +238,7 @@ if (DIR_PATH != NULL)
 	{
 	while ((dir_ents = readdir (DIR_PATH)))		// get directory listing
 		{
-		stat (dir_ents->d_name, &file_stat);
+		lstat (dir_ents->d_name, &file_stat);
 		if (file_stat.st_mode & S_IFREG)
 			{
 			find_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
@@ -294,7 +294,7 @@ while (find_list_read < find_list_write)
 			{
 			while ((dir_ents = readdir (DIR_PATH)))			// get directory listing
 				{
-				stat (dir_ents->d_name, &file_stat);
+				lstat (dir_ents->d_name, &file_stat);
 				if (file_stat.st_mode & S_IFREG)
 					{
 					find_list [find_list_write].object_type = FILE_ENTRY;	// set type to file
@@ -397,7 +397,7 @@ for (find_list_read = 0; find_list_read < find_list_write; find_list_read ++)
 		{
 		if (find_list [find_list_read].object_type == T_FIL)		// output only files, no directories
 			{
-			if (stat (find_list [find_list_read].filepath, &file_stat) == 0)
+			if (lstat (find_list [find_list_read].filepath, &file_stat) == 0)
 				{
 				if (file_stat.st_mode & S_IFREG)
 					{

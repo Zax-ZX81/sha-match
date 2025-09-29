@@ -213,7 +213,7 @@ do
 			sdup_db [database_line].index = database_line;
 			if (sdflags->c_scheme == BY_TIME)
 				{
-				if (stat (sdup_db [database_line].filepath, &file_stat) == 0)
+				if (lstat (sdup_db [database_line].filepath, &file_stat) == 0)
 					{
 					if (file_stat.st_mode & S_IFREG)
 						{
